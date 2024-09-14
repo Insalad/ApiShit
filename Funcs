@@ -525,11 +525,17 @@ getgenv().isrenderobj = function(obj)
 end
 
 getgenv().getrenderproperty = function(obj, property)
-    if isrenderobj(obj) then
-        return obj[property]
+    if not pcall(function() isrenderobj(obj) end) then
+        error("Invalid render object provided", 2)
     end
-    return nil
+    
+    if obj[property] == nil then
+        error("Property '" .. tostring(property) .. "' does not exist on the object", 2)
+    end
+    
+    return obj[property]
 end
+
 getgenv().getcallingscript = function()
 	local Source = debug.info(1, 's')
 	for i, v in next, game:GetDescendants() do if v:GetFullName() == Source then return v end end
