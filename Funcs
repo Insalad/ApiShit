@@ -6,7 +6,6 @@
     - if i forgot to credit you dm me: insaladarel on discord
 ]]
 
-getgenv().checkcaller = function() return true end
 local logserv = game:GetService("LogService")
 local cached, ConsoleClone, identity, log = {}, nil, nil, nil
 getgenv().cache = {
