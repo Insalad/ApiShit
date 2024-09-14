@@ -758,3 +758,13 @@ getgenv().messagebox = function(text, caption, flags) --sorta
 	coroutine.wrap(GZGQI_fake_script)()
 	coroutine.wrap(QGPMPA_fake_script)()
 end
+
+getgenv().getrunningscripts = function()
+    local runningscripts = {}
+    for _, child in pairs(game:GetDescendants()) do
+        if (child:IsA("LocalScript") and not child.Disabled) or child:IsA("ModuleScript") then
+            table.insert(runningscripts, child)
+        end
+    end
+    return runningscripts
+end
