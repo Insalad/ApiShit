@@ -769,12 +769,3 @@ getgenv().getrunningscripts = function()
     return runningscripts
 end
 
-function luaerrorhandler(message)
-    local msg = tostring(message)
-    if not (msg:find("XENO SERVER ERROR:") or msg:find("An unknown error occured by the server")) then
-        local newmsg = "[Salad Error Handler]: " .. msg
-        warn(newmsg)
-    end
-end
-getgenv().error = luaerrorhandler
-
