@@ -1259,5 +1259,24 @@ getgenv().Drawing.new = function(drawingType)
 		})
 	end
 end
-
+getgenv().getreg = function()
+    local tables = {}
+    for _, value in pairs(getgenv()) do
+        if type(value) == "table" and #value > 0 then
+            local mt = getmetatable(value)
+            if mt and rawget(mt, "__mode") == "kvs" then
+                table.insert(tables, value)
+            end
+        end
+    end
+    return tables
+end
+function luaerrorhandler(message)
+    local msg = tostring(message)
+    if not (msg:find("XENO SERVER ERROR:") or msg:find("An unknown error occured by the server")) then
+        local newmsg = "[Salad Error Handler]: " .. msg
+        warn(newmsg)
+    end
+end
+getgenv().error = luaerrorhandler
 
