@@ -1271,4 +1271,10 @@ getgenv().getreg = function()
     end
     return tables
 end
+getgenv().identifyexecutor = function()
+    return "Salad", "2"
+end
 
+getgenv().getexecutorname = function()
+    return "Salad"
+end
