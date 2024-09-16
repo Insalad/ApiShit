@@ -1279,3 +1279,7 @@ end
 getgenv().getexecutorname = function()
     return "Salad"
 end
+
+getgenv().checkcaller = function()
+    return 3 <= getthreadidentity()
+end 
