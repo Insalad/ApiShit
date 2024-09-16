@@ -6,8 +6,7 @@
     - if i forgot to credit you dm me: insaladarel on discord
 ]]
 
-local logserv = game:GetService("LogService")
-local cached, ConsoleClone, identity, log = {}, nil, nil, nil
+local cached, ConsoleClone, log = {}, nil, nil
 getgenv().cache = {
     iscached = function(part) return cached[part] ~= 'nil' end,
     invalidate = function(part) cached[part] = 'nil'; part.Parent = nil end,
@@ -19,6 +18,8 @@ getgenv().cache = {
 
 local function check(func, ...) return pcall(func, ...) end
 
+local logserv = game:GetService("LogService")
+local identity
 log = logserv.MessageOut:Connect(function(msg)
     if msg:find("Current identity is") then identity = tonumber(msg:gsub('Current identity is', ''):match("%d+")) end 
 end)
@@ -30,7 +31,7 @@ getgenv().getthreadidentity = function()
 end
 
 getgenv().printidentity = function()
-    print("Current identity is "..getthreadidentity()) 
+    print("Current identity is "..identity)  -- REAL!!!
 end 
 
 getgenv().getidentity = getthreadidentity
