@@ -30,9 +30,30 @@ getgenv().getthreadidentity = function()
     return identity 
 end
 
-getgenv().printidentity = function()
-    print("Current identity is "..identity)  -- REAL!!!
-end 
+-- partially working funcs start
+getgenv().hookfunction = function(original, hook) 
+    if type(original) ~= "function" then
+        error("The first arg must be a function (original func).")
+    end
+    if type(hook) ~= "function" then
+        error("The second arg must be a function (hook).")
+    end
+    local hooked = function(...)
+        return hook(original, ...)
+    end
+    local info = debug.getinfo(original)
+    if info and info.name then
+        getgenv()[info.name] = hooked
+    else
+        error("Failed to get function name")
+    end
+
+    return original
+end
+
+hookfunction(printidentity, function(original)
+    print("Current identity is " .. tostring(identity or "0"))
+end)
 
 getgenv().getidentity = getthreadidentity
 getgenv().getthreadcontext = getthreadidentity
@@ -206,26 +227,6 @@ getgenv().rconsolesettitle = rconsolename
 getgenv().consolesettitle = rconsolename
 getgenv().consoleprint = rconsoleprint
 
--- partially working funcs start
-getgenv().hookfunction = function(original, hook) 
-    if type(original) ~= "function" then
-        error("The first arg must be a function (original func).")
-    end
-    if type(hook) ~= "function" then
-        error("The second arg must be a function (hook).")
-    end
-    local hooked = function(...)
-        return hook(original, ...)
-    end
-    local info = debug.getinfo(original)
-    if info and info.name then
-        getgenv()[info.name] = hooked
-    else
-        error("Failed to get function name")
-    end
-
-    return hook
-end
 
 getgenv().WebSocket = {}
 getgenv().WebSocket.connect = function(url)
@@ -1283,3 +1284,8 @@ end
 getgenv().checkcaller = function()
     return 3 <= getthreadidentity()
 end 
+
+-- yup invalidating them, somehow the funcs break if i just dont add them in the code so i have to do this lmao
+getgenv().hookmetamethod = nil 
+getgenv().getrawmetatable = nil 
+getgenv().setrawmetatable = nil 
