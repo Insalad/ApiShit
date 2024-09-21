@@ -18,18 +18,6 @@ getgenv().cache = {
 
 local function check(func, ...) return pcall(func, ...) end
 
-local logserv = game:GetService("LogService")
-local identity
-log = logserv.MessageOut:Connect(function(msg)
-    if msg:find("Current identity is") then identity = tonumber(msg:gsub('Current identity is', ''):match("%d+")) end 
-end)
-
-printidentity()
-
-getgenv().getthreadidentity = function()
-    return identity 
-end
-
 -- partially working funcs start
 getgenv().hookfunction = function(original, hook) 
     if type(original) ~= "function" then
@@ -51,13 +39,16 @@ getgenv().hookfunction = function(original, hook)
     return original
 end
 
-hookfunction(printidentity, function(original)
-    print("Current identity is " .. tostring(identity or "0"))
-end)
-
+local identity = 3 -- xeno's identity yes
+hookfunction(printidentity, function() print("Current identity is "..identity) end) -- real :scream:
+getgenv().setthreadidentity = function(newidentity)
+    identity = newidentity
+end
+getgenv().getthreadidentity = function()
+    return identity 
+end 
 getgenv().getidentity = getthreadidentity
 getgenv().getthreadcontext = getthreadidentity
-getgenv().setthreadidentity = function(newidentity) identity = newidentity end
 getgenv().setidentity = setthreadidentity
 getgenv().setthreadcontext = setthreadidentity
 
@@ -226,35 +217,6 @@ getgenv().consoleinput = rconsoleinput
 getgenv().rconsolesettitle = rconsolename
 getgenv().consolesettitle = rconsolename
 getgenv().consoleprint = rconsoleprint
-
-
-getgenv().WebSocket = {}
-getgenv().WebSocket.connect = function(url)
-	local wsOnMessage = Instance.new("BindableEvent")
-	local wsOnClose = Instance.new("BindableEvent")
-
-	local isConnected = true
-
-	return {
-		Send = function(self, message)
-			if isConnected then
-				wsOnMessage:Fire("Received message: " .. message)
-			else
-				error("WebSocket is closed")
-			end
-		end,
-		Close = function(self)
-			if isConnected then
-				isConnected = false
-				wsOnClose:Fire()
-			else
-				error("WebSocket is already closed")
-			end
-		end,
-		OnMessage = wsOnMessage.Event,
-		OnClose = wsOnClose.Event
-	}
-end
 
 local hiddenProperties = {}
 
@@ -1289,3 +1251,191 @@ end
 getgenv().hookmetamethod = nil 
 getgenv().getrawmetatable = nil 
 getgenv().setrawmetatable = nil 
+
+-- xeno funcs shit blah blah blah im too lazy to make the code better ok
+local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
+local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
+local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
+local httpSpy = false
+local hwid = HttpService:GenerateGUID(false)
+
+local function sendRequest(options, timeout)
+	timeout = tonumber(timeout) or math.huge
+	local result, clock = nil, tick()
+
+	HttpService:RequestInternal(options):Start(function(success, body)
+		result = body
+		result['Success'] = success
+	end)
+
+	while not result do task.wait()
+		if (tick() - clock > timeout) then
+			break
+		end
+	end
+
+	return result
+end
+
+
+task.spawn(function()
+	local result = sendRequest({
+		Url = Bridge.serverUrl .. "/send",
+		Body = HttpService:JSONEncode({
+			['c'] = "hw"
+		}),
+		Method = "POST"
+	})
+	if result.Body then
+		hwid = result.Body:gsub("{", ""):gsub("}", "")
+	end
+end)
+
+function Bridge:InternalRequest(body, timeout)
+	local url = self.serverUrl .. '/send'
+	if body.Url then
+		url = body.Url
+		body["Url"] = nil
+		local options = {
+			Url = url,
+			Body = body['ct'],
+			Method = 'POST',
+			Headers = {
+				['Content-Type'] = 'text/plain'
+			}
+		}
+		local result = sendRequest(options, timeout)
+		local statusCode = tonumber(result.StatusCode)
+		if statusCode and statusCode >= 200 and statusCode < 300 then
+			return result.Body or true
+		end
+
+		local success, result = pcall(function()
+			local decoded = HttpService:JSONDecode(result.Body)
+			if decoded and type(decoded) == "table" then
+				return decoded.error
+			end
+		end)
+
+		if success and result then
+			error(result, 2)
+			return
+		end
+
+		error("[Salad Error]: Unknown error", 2)
+		return
+	end
+
+	local success = pcall(function()
+		body = HttpService:JSONEncode(body)
+	end) if not success then return end
+
+	local options = {
+		Url = url,
+		Body = body,
+		Method = 'POST',
+		Headers = {
+			['Content-Type'] = 'application/json'
+		}
+	}
+
+	local result = sendRequest(options, timeout)
+
+	if type(result) ~= 'table' then return end
+
+	local statusCode = tonumber(result.StatusCode)
+	if statusCode and statusCode >= 200 and statusCode < 300 then
+		return result.Body or true
+	end
+
+	local success, result = pcall(function()
+		local decoded = HttpService:JSONDecode(result.Body)
+		if decoded and type(decoded) == "table" then
+			return decoded.error
+		end
+	end)
+
+	if success and result then
+		error("[Salad Error]: " .. tostring(result), 2)
+	end
+
+	error("[Salad Error]: Unknown server error", 2)
+end
+
+function Bridge:request(options)
+	local result = self:InternalRequest({
+		['c'] = "rq",
+		['l'] = options.Url,
+		['m'] = options.Method,
+		['h'] = options.Headers,
+		['b'] = options.Body or "{}"
+	})
+	if result then
+		result = HttpService:JSONDecode(result)
+		if result['r'] ~= "OK" then
+			result['r'] = "Unknown"
+		end
+		if result['b64'] then
+			result['b'] = base64.decode(result['b'])
+		end
+		return {
+			Success = tonumber(result['c']) and tonumber(result['c']) > 200 and tonumber(result['c']) < 300,
+			StatusMessage = result['r'], -- OK
+			StatusCode = tonumber(result['c']), -- 200
+			Body = result['b'],
+			HttpError = Enum.HttpError[result['r']],
+			Headers = result['h'],
+			Version = result['v']
+		}
+	end
+	return {
+		Success = false,
+		StatusMessage = "[Salad Error]: webServer connection failed:  " .. self.serverUrl,
+		StatusCode = 599;
+		HttpError = Enum.HttpError.ConnectFail
+	}
+end
+getgenv().request = function(options)
+	assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
+	assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
+	options.Method = options.Method or "GET"
+	options.Method = options.Method:upper()
+	assert(table.find(supportedMethods, options.Method), "invalid option 'Method' for argument #1 to 'request' (a valid http method expected, got '" .. options.Method .. "') ", 2)
+	assert(not (options.Method == "GET" and options.Body), "invalid option 'Body' for argument #1 to 'request' (current method is GET but option 'Body' was used)", 2)
+	if options.Body then
+		assert(type(options.Body) == "string", "invalid option 'Body' for argument #1 to 'request' (string expected, got " .. type(options.Body) .. ") ", 2)
+		options.Body = base64.encode(options.Body)
+	end
+	if options.Headers then assert(type(options.Headers) == "table", "invalid option 'Headers' for argument #1 to 'request' (table expected, got " .. type(options.Url) .. ") ", 2) end
+	options.Body = options.Body or "e30=" 
+	options.Headers = options.Headers or {}
+	if httpSpy then
+		rconsoleprint("HTTPSPY:\nUrl: " .. options.Url .. 
+			"\nMethod: " .. options.Method .. 
+			"\nBody: " .. options.Body .. 
+			"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
+		)
+	end
+	if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
+	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Salad 2" 
+	options.Headers["Exploit-Guid"] = tostring(hwid)
+	options.Headers["Salad-Fingerprint"] = tostring(hwid)
+	options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
+	options.Headers["Roblox-Game-Id"] = tostring(game.GameId)
+	options.Headers["Roblox-Session-Id"] = HttpService:JSONEncode({
+		["GameId"] = tostring(game.GameId),
+		["PlaceId"] = tostring(game.PlaceId)
+	})
+	local response = Bridge:request(options)
+	if httpSpy then
+		rconsoleprint("Response:\nStatusCode: " .. tostring(response.StatusCode) ..
+			"\nStatusMessage: " .. tostring(response.StatusMessage) ..
+			"\nSuccess: " .. tostring(response.Success) ..
+			"\nBody: " .. tostring(response.Body) ..
+			"\nHeaders: " .. tostring(HttpService:JSONEncode(response.Headers)) ..
+			"-\n\n"
+		)
+	end
+	return response
+end
+getgenv().WebSocket = nil
