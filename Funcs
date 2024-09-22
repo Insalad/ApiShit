@@ -1038,7 +1038,7 @@ getgenv().setthreadidentity = function(newidentity)
     identity = newidentity
 end
 getgenv().getthreadidentity = function()
-    return identity 
+    return identity or 3
 end 
 getgenv().getidentity = getthreadidentity
 getgenv().getthreadcontext = getthreadidentity
