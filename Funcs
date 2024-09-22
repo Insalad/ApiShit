@@ -1032,14 +1032,15 @@ getgenv().getrawmetatable = nil
 getgenv().setrawmetatable = nil 
 getgenv().WebSocket = nil
 
-local identity = 3 -- xeno's identity yes
-hookfunction(printidentity, function() print("Current identity is "..identity) end) -- real :scream:
-getgenv().setthreadidentity = function(newidentity)
-    identity = newidentity
-end
+local identity = 3 -- xeno's identity lol 
+hookfunction(printidentity, function() print("Current identity is "..identity) end) --- fr!1!!11
 getgenv().getthreadidentity = function()
-    return identity or 3
+    return identity 
 end 
+getgenv().setthreadidentity = function(newidentity) -- realest :scream: 
+    identity = newidentity 
+end 
+
 getgenv().getidentity = getthreadidentity
 getgenv().getthreadcontext = getthreadidentity
 getgenv().setidentity = setthreadidentity
