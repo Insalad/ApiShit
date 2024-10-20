@@ -1773,13 +1773,13 @@ getgenv().salad.is_player_alive = function(player)
     return humanoid.Health > 0
 end
 
-getgenv().salad.teleport_to_player = function(targetName)
-    assert(targetName, "[ Salad ]: Target player name is nil")
+getgenv().salad.teleport_to_player = function(targetn)
+    assert(targetn, "[ Salad ]: Target player name is nil")
 
-    local targetPlayer = getgenv().salad.get_player_by_name(targetName)
-    assert(targetPlayer, "[ Salad ]: Target player not found")
+    local targetplr = getgenv().salad.get_player_by_name(targetn)
+    assert(targetplr, "[ Salad ]: Target player not found")
 
-    local targetHRP = getgenv().salad.get_hrp(targetPlayer)
+    local targetHRP = getgenv().salad.get_hrp(targetplr)
     local localHRP = getgenv().salad.get_hrp(game.Players.LocalPlayer)
 
     assert(targetHRP, "[ Salad ]: Target player does not have a HumanoidRootPart")
@@ -1789,12 +1789,12 @@ getgenv().salad.teleport_to_player = function(targetName)
     return true
 end
 
-getgenv().salad.get_distance = function(player1Name, player2Name)
-    assert(player1Name, "[ Salad ]: Player 1 name is nil")
-    assert(player2Name, "[ Salad ]: Player 2 name is nil")
+getgenv().salad.get_distance = function(plr1, plr2)
+    assert(plr1, "[ Salad ]: Player 1 name is nil")
+    assert(plr2, "[ Salad ]: Player 2 name is nil")
 
-    local player1 = getgenv().salad.get_player_by_name(player1Name)
-    local player2 = getgenv().salad.get_player_by_name(player2Name)
+    local player1 = getgenv().salad.get_player_by_name(plr1)
+    local player2 = getgenv().salad.get_player_by_name(plr2)
 
     assert(player1, "[ Salad ]: Player 1 not found")
     assert(player2, "[ Salad ]: Player 2 not found")
