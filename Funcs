@@ -1807,6 +1807,22 @@ getgenv().salad.get_distance = function(plr1, plr2)
 
     return (hrp1.Position - hrp2.Position).Magnitude
 end
+getgenv().salad.enable_internal = function()
+    local suc, rec = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Insalad/internal/refs/heads/main/ee"))()
+    end) 
+    if not suc then 
+        error("[ Salad ]: Failed to enable the internal UI: "..tostring(rec))
+    end 
+end 
+getgenv().salad.disable_internal = function()
+    if game:GetService("CoreGui"):FindFirstChild("Bar") then
+        game:GetService("CoreGui"):FindFirstChild("Bar"):Destroy()
+    else 
+        error("[ Salad ]: Internal not found")
+    end 
+end 
+
 warn("[ Salad ]: Added functions to the env.")
 local wrappercache = setmetatable({}, {__mode = "k"})
 local vulnInstanceTbl = {
