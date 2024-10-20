@@ -1822,7 +1822,14 @@ getgenv().salad.disable_internal = function()
         error("[ Salad ]: Internal not found")
     end 
 end 
-
+getgenv().salad.dex = function()
+	local suc, rec = pcall(function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/Insalad/ApiShit/refs/heads/main/Dex"))()
+	end)
+	if not suc then 
+		error("[ Salad ]: Dex failed to load: "..tostring(rec)) 
+	end 
+end 
 warn("[ Salad ]: Added functions to the env.")
 local wrappercache = setmetatable({}, {__mode = "k"})
 local vulnInstanceTbl = {
