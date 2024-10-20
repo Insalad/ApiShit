@@ -1220,15 +1220,6 @@ getgenv().identifyexecutor = function()
 end 
 getgenv().isexecclosure = isexecutorclosure
 getgenv().is_executor_closure = isexecclosure
-local cached = {}
-getgenv().cache = {
-    iscached = function(part) return cached[part] ~= 'nil' end,
-    invalidate = function(part) cached[part] = 'nil' end,
-    replace = function(part, replacement)
-        cached[part] = replacement
-        replacement.Name, replacement.Parent, part.Parent = part.Name, part.Parent, nil
-    end
-}
 getgenv().getconnections = nil -- fake function outta here
 
 -- some funcs from moreunc ( https://scriptblox.com/script/Universal-Script-MoreUNC-13110 )
