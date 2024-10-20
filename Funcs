@@ -1728,6 +1728,85 @@ getgenv().iswriteable = function(tbl)
     return not table.isfrozen(tbl)
 end
 getgenv().string = string
+-- [[ Salad Custom Functions ]]
+getgenv().salad = {}
+
+getgenv().salad.get_player_by_name = function(name)
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.DisplayName == name or player.Name == name then
+            return player
+        end
+    end
+    return nil
+end
+
+getgenv().salad.get_hrp = function(player)
+    player = player or game.Players.LocalPlayer
+    assert(player, "[ Salad ]: Player is nil")
+
+    local character = player.Character
+    assert(character, "[ Salad ]: Character not found for player")
+
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    assert(hrp, "[ Salad ]: HumanoidRootPart not found for player")
+
+    return hrp
+end
+
+getgenv().salad.teleport = function(trpos)
+    assert(trpos, "[ Salad ]: Target position is nil")
+
+    local root = getgenv().salad.get_hrp(game.Players.LocalPlayer)
+    assert(root, "[ Salad ]: Player or RootPart not found")
+
+    root.CFrame = CFrame.new(trpos)
+    return true
+end
+
+getgenv().salad.is_player_alive = function(player)
+    player = player or game.Players.LocalPlayer
+    assert(player, "[ Salad ]: Player is nil")
+
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+    assert(humanoid, "[ Salad ]: Humanoid not found for player")
+
+    return humanoid.Health > 0
+end
+
+getgenv().salad.teleport_to_player = function(targetName)
+    assert(targetName, "[ Salad ]: Target player name is nil")
+
+    local targetPlayer = getgenv().salad.get_player_by_name(targetName)
+    assert(targetPlayer, "[ Salad ]: Target player not found")
+
+    local targetHRP = getgenv().salad.get_hrp(targetPlayer)
+    local localHRP = getgenv().salad.get_hrp(game.Players.LocalPlayer)
+
+    assert(targetHRP, "[ Salad ]: Target player does not have a HumanoidRootPart")
+    assert(localHRP, "[ Salad ]: Local player does not have a HumanoidRootPart")
+
+    localHRP.CFrame = targetHRP.CFrame
+    return true
+end
+
+getgenv().salad.get_distance = function(player1Name, player2Name)
+    assert(player1Name, "[ Salad ]: Player 1 name is nil")
+    assert(player2Name, "[ Salad ]: Player 2 name is nil")
+
+    local player1 = getgenv().salad.get_player_by_name(player1Name)
+    local player2 = getgenv().salad.get_player_by_name(player2Name)
+
+    assert(player1, "[ Salad ]: Player 1 not found")
+    assert(player2, "[ Salad ]: Player 2 not found")
+
+    local hrp1 = getgenv().salad.get_hrp(player1)
+    local hrp2 = getgenv().salad.get_hrp(player2)
+
+    assert(hrp1, "[ Salad ]: Player 1 does not have a HumanoidRootPart")
+    assert(hrp2, "[ Salad ]: Player 2 does not have a HumanoidRootPart")
+
+    return (hrp1.Position - hrp2.Position).Magnitude
+end
 warn("[ Salad ]: Added functions to the env.")
 local wrappercache = setmetatable({}, {__mode = "k"})
 local vulnInstanceTbl = {
