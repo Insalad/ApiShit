@@ -1978,8 +1978,16 @@ unwrap = function(wrapped)
 		return real
 	end
 end
-warn("[ Salad ]: Vulns mitigated.")
 getgenv().game = wrap(game)
+local oldlf = listfiles
+getgenv().listfiles = function(path)
+    if path == "" or path == "C:\\" then 
+        error("no")
+    else 
+        return oldlf(path)
+    end 
+end
+warn("[ Salad ]: Vulns mitigated.")
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Salad FREE Injected",
     Text = "Powered by Xeno API\ndiscord.gg/saladexploits",  -- xeno server: discord.gg/getxeno
