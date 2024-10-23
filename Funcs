@@ -1982,7 +1982,7 @@ warn("[ Salad ]: Vulns mitigated.")
 getgenv().game = wrap(game)
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Salad FREE Injected",
-    Text = "Powered by Xeno API\ndiscord.gg/saladexploits", 
+    Text = "Powered by Xeno API\ndiscord.gg/saladexploits",  -- xeno server: discord.gg/getxeno
     Duration = 2,
 	Icon = "rbxassetid://131147909814952"
 })
