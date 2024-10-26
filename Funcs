@@ -1224,6 +1224,14 @@ getgenv().getcallingscript = function()
 	for i, v in next, game:GetDescendants() do if v:GetFullName() == Source then return v end end
 end
 getgenv().get_calling_script = getcallingscript 
+local oldls = loadstring
+local sUNChunk = "https://gitlab.com/sens3/nebunu/-/raw/main/HummingBird8's_sUNC_yes_i_moved_to_gitlab_because_my_github_acc_got_brickedd/sUNCm0m3n7.lua"
+getgenv().loadstring = function(chunk, chunk_name)
+    if chunk == 'loadstring(game:HttpGet("'..sUNChunk..'"))()' then
+        warn("[ Salad ]: Warning\nsUNC might flag some working functions as 'non-working/faked' (like `isscriptable`) because `setscriptable` doesn't work.\nThis could also affect other functions, so please keep in mind that the results might not be fully accurate.") -- blah 
+    end 
+    return oldls(chunk, chunk_name or nil)
+end
 getgenv().isexecclosure = isexecutorclosure
 getgenv().is_executor_closure = isexecclosure
 getgenv().getconnections = nil -- fake function outta here
