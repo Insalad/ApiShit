@@ -1219,6 +1219,11 @@ end
 getgenv().identifyexecutor = function()
 	return "Salad", "2"
 end 
+getgenv().getcallingscript = function()
+	local Source = debug.info(1, 's')
+	for i, v in next, game:GetDescendants() do if v:GetFullName() == Source then return v end end
+end
+getgenv().get_calling_script = getcallingscript 
 getgenv().isexecclosure = isexecutorclosure
 getgenv().is_executor_closure = isexecclosure
 getgenv().getconnections = nil -- fake function outta here
