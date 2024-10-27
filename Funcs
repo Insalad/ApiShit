@@ -1851,6 +1851,7 @@ local wrappercache = setmetatable({}, {__mode = "k"})
 local vulnInstanceTbl = {
 	"HttpRbxApiService",
 	"MarketplaceService",
+    "HttpService",
 	"GuiService",
 	"OpenCloudService",
 	"BrowserService",
@@ -1898,10 +1899,10 @@ local vulnFuncTbl = {
 	"PromptNativePurchaseWithLocalPlayer",
 	"PromptNativePurchase",
 	"PromptCollectiblesPurchase",
-	"TakeScreenshot",
 	"GetAsync",
 	"RequestInternal",
-	"ToggleRecording",
+    "HttpRequestAsync",
+    "RequestAsync",
 	"OpenScreenshotsFolder",
 	"Load"
 }
@@ -1924,6 +1925,19 @@ wrap = function(real)
 			elseif k == "GetObjects" or k == "LoadLocalAsset" or k == "LoadAsset" then
 				return function(self, id)
 					local ret = {[1] = game:FindFirstChildOfClass("InsertService"):LoadLocalAsset(id)}
+					return ret
+				end
+            elseif k == "HttpGet" or k == "HttpGetAsync" then
+				return function(self, url)    
+					assert(typeof(url)=="string", "Expected string for URL")
+					local ret
+					local returnBindable = Instance.new("BindableEvent")
+					game:GetService("HttpService"):RequestInternal({Url = url:gsub('roblox.com','roproxy.com'), CachePolicy = Enum.HttpCachePolicy.None, Headers = {["Salad-Fingerprint"] = gethwid() or "OUTDATED"}}):Start(function(success, data)
+						ret = data.Body
+
+						returnBindable:fire()
+					end)
+					returnBindable.Event:Wait()
 					return ret
 				end
 			elseif k == "GetService" or k == "FindService" or k == "service" or k == "Service" then
