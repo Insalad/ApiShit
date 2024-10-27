@@ -1712,6 +1712,17 @@ end
 getgenv().syn.crypt = getgenv().crypt
 getgenv().syn.crypto = getgenv().crypt
 getgenv().syn_backup = getgenv().syn
+getgenv().syn.cache_replace = cache.replace 
+getgenv().syn.cache_invalidate = cache.invalidate 
+getgenv().syn.is_cached = cache.iscached 
+getgenv().syn.set_thread_identity = setthreadidentity 
+getgenv().syn.get_thread_identity = getthreadidentity 
+getgenv().syn.queue_on_teleport = queueonteleport 
+getgenv().syn.request = request 
+getgenv().fluxus = {}
+getgenv().fluxus.request = request 
+getgenv().fluxus.queue_on_teleport = queueonteleport
+getgenv().fluxus.set_thread_identity = setthreadidentity 
 getgenv().setrbxclipboard = setclipboard
 getgenv().writeclipboard = setclipboard
 getgenv().getprotecteduis = function()
@@ -1993,9 +2004,12 @@ getgenv().listfiles = function(path)
     end 
 end
 warn("[ Salad ]: Vulns mitigated.")
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "Salad FREE Injected",
-    Text = "Powered by Xeno API\ndiscord.gg/saladexploits",  -- xeno server: discord.gg/getxeno
-    Duration = 2,
-	Icon = "rbxassetid://131147909814952"
-})
+if not shared.notified then 
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Salad FREE Injected",
+        Text = "Powered by Xeno API\ndiscord.gg/saladexploits",  -- xeno server: discord.gg/getxeno
+        Duration = 2,
+        Icon = "rbxassetid://131147909814952"
+    })
+    shared.notified = true 
+end 
