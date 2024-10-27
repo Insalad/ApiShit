@@ -1028,191 +1028,193 @@ getgenv().getreg = function()
     return tables
 end
 -- xeno funcs shit blah blah blah im too lazy to make the code better ok
-local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
-local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
-local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
-local httpSpy = false
-local hwid = HttpService:GenerateGUID(false)
-
-local function sendRequest(options, timeout)
-	timeout = tonumber(timeout) or math.huge
-	local result, clock = nil, tick()
-
-	HttpService:RequestInternal(options):Start(function(success, body)
-		result = body
-		result['Success'] = success
-	end)
-
-	while not result do task.wait()
-		if (tick() - clock > timeout) then
-			break
+if not shared.vulnsm then 
+	local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
+	local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
+	local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
+	local httpSpy = false
+	local hwid = HttpService:GenerateGUID(false)
+	
+	local function sendRequest(options, timeout)
+		timeout = tonumber(timeout) or math.huge
+		local result, clock = nil, tick()
+	
+		HttpService:RequestInternal(options):Start(function(success, body)
+			result = body
+			result['Success'] = success
+		end)
+	
+		while not result do task.wait()
+			if (tick() - clock > timeout) then
+				break
+			end
 		end
+	
+		return result
 	end
-
-	return result
-end
-
-
-task.spawn(function()
-	local result = sendRequest({
-		Url = Bridge.serverUrl .. "/send",
-		Body = HttpService:JSONEncode({
-			['c'] = "hw"
-		}),
-		Method = "POST"
-	})
-	if result.Body then
-		hwid = result.Body:gsub("{", ""):gsub("}", "")
-	end
-end)
-
-function Bridge:InternalRequest(body, timeout)
-	local url = self.serverUrl .. '/send'
-	if body.Url then
-		url = body.Url
-		body["Url"] = nil
+	
+	
+	task.spawn(function()
+		local result = sendRequest({
+			Url = Bridge.serverUrl .. "/send",
+			Body = HttpService:JSONEncode({
+				['c'] = "hw"
+			}),
+			Method = "POST"
+		})
+		if result.Body then
+			hwid = result.Body:gsub("{", ""):gsub("}", "")
+		end
+	end)
+	
+	function Bridge:InternalRequest(body, timeout)
+		local url = self.serverUrl .. '/send'
+		if body.Url then
+			url = body.Url
+			body["Url"] = nil
+			local options = {
+				Url = url,
+				Body = body['ct'],
+				Method = 'POST',
+				Headers = {
+					['Content-Type'] = 'text/plain'
+				}
+			}
+			local result = sendRequest(options, timeout)
+			local statusCode = tonumber(result.StatusCode)
+			if statusCode and statusCode >= 200 and statusCode < 300 then
+				return result.Body or true
+			end
+	
+			local success, result = pcall(function()
+				local decoded = HttpService:JSONDecode(result.Body)
+				if decoded and type(decoded) == "table" then
+					return decoded.error
+				end
+			end)
+	
+			if success and result then
+				error(result, 2)
+				return
+			end
+	
+			error("[Salad Error]: Unknown error", 2)
+			return
+		end
+	
+		local success = pcall(function()
+			body = HttpService:JSONEncode(body)
+		end) if not success then return end
+	
 		local options = {
 			Url = url,
-			Body = body['ct'],
+			Body = body,
 			Method = 'POST',
 			Headers = {
-				['Content-Type'] = 'text/plain'
+				['Content-Type'] = 'application/json'
 			}
 		}
+	
 		local result = sendRequest(options, timeout)
+	
+		if type(result) ~= 'table' then return end
+	
 		local statusCode = tonumber(result.StatusCode)
 		if statusCode and statusCode >= 200 and statusCode < 300 then
 			return result.Body or true
 		end
-
+	
 		local success, result = pcall(function()
 			local decoded = HttpService:JSONDecode(result.Body)
 			if decoded and type(decoded) == "table" then
 				return decoded.error
 			end
 		end)
-
+	
 		if success and result then
-			error(result, 2)
-			return
+			error("[Salad Error]: " .. tostring(result), 2)
 		end
-
-		error("[Salad Error]: Unknown error", 2)
-		return
+	
+		error("[Salad Error]: Unknown server error", 2)
 	end
-
-	local success = pcall(function()
-		body = HttpService:JSONEncode(body)
-	end) if not success then return end
-
-	local options = {
-		Url = url,
-		Body = body,
-		Method = 'POST',
-		Headers = {
-			['Content-Type'] = 'application/json'
-		}
-	}
-
-	local result = sendRequest(options, timeout)
-
-	if type(result) ~= 'table' then return end
-
-	local statusCode = tonumber(result.StatusCode)
-	if statusCode and statusCode >= 200 and statusCode < 300 then
-		return result.Body or true
-	end
-
-	local success, result = pcall(function()
-		local decoded = HttpService:JSONDecode(result.Body)
-		if decoded and type(decoded) == "table" then
-			return decoded.error
-		end
-	end)
-
-	if success and result then
-		error("[Salad Error]: " .. tostring(result), 2)
-	end
-
-	error("[Salad Error]: Unknown server error", 2)
-end
-
-function Bridge:request(options)
-	local result = self:InternalRequest({
-		['c'] = "rq",
-		['l'] = options.Url,
-		['m'] = options.Method,
-		['h'] = options.Headers,
-		['b'] = options.Body or "{}"
-	})
-	if result then
-		result = HttpService:JSONDecode(result)
-		if result['r'] ~= "OK" then
-			result['r'] = "Unknown"
-		end
-		if result['b64'] then
-			result['b'] = base64.decode(result['b'])
+	
+	function Bridge:request(options)
+		local result = self:InternalRequest({
+			['c'] = "rq",
+			['l'] = options.Url,
+			['m'] = options.Method,
+			['h'] = options.Headers,
+			['b'] = options.Body or "{}"
+		})
+		if result then
+			result = HttpService:JSONDecode(result)
+			if result['r'] ~= "OK" then
+				result['r'] = "Unknown"
+			end
+			if result['b64'] then
+				result['b'] = base64.decode(result['b'])
+			end
+			return {
+				Success = tonumber(result['c']) and tonumber(result['c']) > 200 and tonumber(result['c']) < 300,
+				StatusMessage = result['r'], -- OK
+				StatusCode = tonumber(result['c']), -- 200
+				Body = result['b'],
+				HttpError = Enum.HttpError[result['r']],
+				Headers = result['h'],
+				Version = result['v']
+			}
 		end
 		return {
-			Success = tonumber(result['c']) and tonumber(result['c']) > 200 and tonumber(result['c']) < 300,
-			StatusMessage = result['r'], -- OK
-			StatusCode = tonumber(result['c']), -- 200
-			Body = result['b'],
-			HttpError = Enum.HttpError[result['r']],
-			Headers = result['h'],
-			Version = result['v']
+			Success = false,
+			StatusMessage = "[Salad Error]: webServer connection failed:  " .. self.serverUrl,
+			StatusCode = 599;
+			HttpError = Enum.HttpError.ConnectFail
 		}
 	end
-	return {
-		Success = false,
-		StatusMessage = "[Salad Error]: webServer connection failed:  " .. self.serverUrl,
-		StatusCode = 599;
-		HttpError = Enum.HttpError.ConnectFail
-	}
-end
-getgenv().request = function(options)
-	assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
-	assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
-	options.Method = options.Method or "GET"
-	options.Method = options.Method:upper()
-	assert(table.find(supportedMethods, options.Method), "invalid option 'Method' for argument #1 to 'request' (a valid http method expected, got '" .. options.Method .. "') ", 2)
-	assert(not (options.Method == "GET" and options.Body), "invalid option 'Body' for argument #1 to 'request' (current method is GET but option 'Body' was used)", 2)
-	if options.Body then
-		assert(type(options.Body) == "string", "invalid option 'Body' for argument #1 to 'request' (string expected, got " .. type(options.Body) .. ") ", 2)
-		options.Body = base64.encode(options.Body)
+	getgenv().request = function(options)
+		assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
+		assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
+		options.Method = options.Method or "GET"
+		options.Method = options.Method:upper()
+		assert(table.find(supportedMethods, options.Method), "invalid option 'Method' for argument #1 to 'request' (a valid http method expected, got '" .. options.Method .. "') ", 2)
+		assert(not (options.Method == "GET" and options.Body), "invalid option 'Body' for argument #1 to 'request' (current method is GET but option 'Body' was used)", 2)
+		if options.Body then
+			assert(type(options.Body) == "string", "invalid option 'Body' for argument #1 to 'request' (string expected, got " .. type(options.Body) .. ") ", 2)
+			options.Body = base64.encode(options.Body)
+		end
+		if options.Headers then assert(type(options.Headers) == "table", "invalid option 'Headers' for argument #1 to 'request' (table expected, got " .. type(options.Url) .. ") ", 2) end
+		options.Body = options.Body or "e30=" 
+		options.Headers = options.Headers or {}
+		if httpSpy then
+			rconsoleprint("HTTPSPY:\nUrl: " .. options.Url .. 
+				"\nMethod: " .. options.Method .. 
+				"\nBody: " .. options.Body .. 
+				"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
+			)
+		end
+		if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
+		options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Salad-Xeno/RobloxApp/2"
+		options.Headers["Exploit-Guid"] = tostring(hwid)
+		options.Headers["Salad-Fingerprint"] = tostring(hwid)
+		options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
+		options.Headers["Roblox-Game-Id"] = tostring(game.GameId)
+		options.Headers["Roblox-Session-Id"] = HttpService:JSONEncode({
+			["GameId"] = tostring(game.GameId),
+			["PlaceId"] = tostring(game.PlaceId)
+		})
+		local response = Bridge:request(options)
+		if httpSpy then
+			rconsoleprint("Response:\nStatusCode: " .. tostring(response.StatusCode) ..
+				"\nStatusMessage: " .. tostring(response.StatusMessage) ..
+				"\nSuccess: " .. tostring(response.Success) ..
+				"\nBody: " .. tostring(response.Body) ..
+				"\nHeaders: " .. tostring(HttpService:JSONEncode(response.Headers)) ..
+				"-\n\n"
+			)
+		end
+		return response
 	end
-	if options.Headers then assert(type(options.Headers) == "table", "invalid option 'Headers' for argument #1 to 'request' (table expected, got " .. type(options.Url) .. ") ", 2) end
-	options.Body = options.Body or "e30=" 
-	options.Headers = options.Headers or {}
-	if httpSpy then
-		rconsoleprint("HTTPSPY:\nUrl: " .. options.Url .. 
-			"\nMethod: " .. options.Method .. 
-			"\nBody: " .. options.Body .. 
-			"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
-		)
-	end
-	if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
-	options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Salad-Xeno/RobloxApp/2"
-	options.Headers["Exploit-Guid"] = tostring(hwid)
-	options.Headers["Salad-Fingerprint"] = tostring(hwid)
-	options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
-	options.Headers["Roblox-Game-Id"] = tostring(game.GameId)
-	options.Headers["Roblox-Session-Id"] = HttpService:JSONEncode({
-		["GameId"] = tostring(game.GameId),
-		["PlaceId"] = tostring(game.PlaceId)
-	})
-	local response = Bridge:request(options)
-	if httpSpy then
-		rconsoleprint("Response:\nStatusCode: " .. tostring(response.StatusCode) ..
-			"\nStatusMessage: " .. tostring(response.StatusMessage) ..
-			"\nSuccess: " .. tostring(response.Success) ..
-			"\nBody: " .. tostring(response.Body) ..
-			"\nHeaders: " .. tostring(HttpService:JSONEncode(response.Headers)) ..
-			"-\n\n"
-		)
-	end
-	return response
-end
+end 
 getgenv().getexecutorname = function()
 	return "Salad"
 end 
@@ -1847,177 +1849,180 @@ getgenv().salad.remote_spy = function()
     end 
 end 
 warn("[ Salad ]: Added functions to the env.")
-local wrappercache = setmetatable({}, {__mode = "k"})
-local vulnInstanceTbl = {
-	"HttpRbxApiService",
-	"MarketplaceService",
-    "HttpService",
-	"GuiService",
-	"OpenCloudService",
-	"BrowserService",
-	"LinkingService",
-	"MessageBusService",
-	"OmniRecommendationsService",
-	"Script Context",
-	"ScriptContext",
-	"game",
-	"Game"
-}
-local vulnFuncTbl = {
-	"PostAsync",
-	"PostAsyncFullUrl",
-	"PerformPurchaseV2",
-	"PromptBundlePurchase",
-	"PromptGamePassPurchase",
-	"PromptProductPurchase",
-	"PromptPurchase",
-	"PromptRobloxPurchase",
-	"PromptThirdPartyPurchase",
-	"OpenBrowserWindow",
-	"OpenNativeOverlay",
-	"AddCoreScriptLocal",
-	"EmitHybridEvent",
-	"ExecuteJavaScript",
-	"ReturnToJavaScript",
-	"SendCommand",
-	"Call",
-	"OpenUrl",
-	"SaveScriptProfilingData",
-	"GetLast",
-	"GetMessageId", 
-	"GetProtocolMethodRequestMessageId",
-	"GetProtocolMethodResponseMessageId",
-	"MakeRequest",
-	"Publish",
-	"PublishProtocolMethodRequest",
-	"PublishProtocolMethodResponse",
-	"Subscribe",
-	"SubscribeToProtocolMethodRequest",
-	"SubscribeToProtocolMethodResponse",
-	"GetRobuxBalance",
-	"GetAsyncFullUrl",
-	"PromptNativePurchaseWithLocalPlayer",
-	"PromptNativePurchase",
-	"PromptCollectiblesPurchase",
-	"GetAsync",
-	"RequestInternal",
-    "HttpRequestAsync",
-    "RequestAsync",
-	"OpenScreenshotsFolder",
-	"Load"
-}
-wrap = function(real)
-	for w,r in next,wrappercache do
-		if r == real then
-			return w
+if not shared.vulnsm then 
+	local wrappercache = setmetatable({}, {__mode = "k"})
+	local vulnInstanceTbl = {
+		"HttpRbxApiService",
+		"MarketplaceService",
+		"HttpService",
+		"GuiService",
+		"OpenCloudService",
+		"BrowserService",
+		"LinkingService",
+		"MessageBusService",
+		"OmniRecommendationsService",
+		"Script Context",
+		"ScriptContext",
+		"game",
+		"Game"
+	}
+	local vulnFuncTbl = {
+		"PostAsync",
+		"PostAsyncFullUrl",
+		"PerformPurchaseV2",
+		"PromptBundlePurchase",
+		"PromptGamePassPurchase",
+		"PromptProductPurchase",
+		"PromptPurchase",
+		"PromptRobloxPurchase",
+		"PromptThirdPartyPurchase",
+		"OpenBrowserWindow",
+		"OpenNativeOverlay",
+		"AddCoreScriptLocal",
+		"EmitHybridEvent",
+		"ExecuteJavaScript",
+		"ReturnToJavaScript",
+		"SendCommand",
+		"Call",
+		"OpenUrl",
+		"SaveScriptProfilingData",
+		"GetLast",
+		"GetMessageId", 
+		"GetProtocolMethodRequestMessageId",
+		"GetProtocolMethodResponseMessageId",
+		"MakeRequest",
+		"Publish",
+		"PublishProtocolMethodRequest",
+		"PublishProtocolMethodResponse",
+		"Subscribe",
+		"SubscribeToProtocolMethodRequest",
+		"SubscribeToProtocolMethodResponse",
+		"GetRobuxBalance",
+		"GetAsyncFullUrl",
+		"PromptNativePurchaseWithLocalPlayer",
+		"PromptNativePurchase",
+		"PromptCollectiblesPurchase",
+		"GetAsync",
+		"RequestInternal",
+		"HttpRequestAsync",
+		"RequestAsync",
+		"OpenScreenshotsFolder",
+		"Load"
+	}
+	wrap = function(real)
+		for w,r in next,wrappercache do
+			if r == real then
+				return w
+			end
 		end
-	end
-
-	if type(real) == "userdata" then
-		local fake = newproxy(true)
-		local meta = getmetatable(fake)
-		
-		meta.__index = function(s,k)
-			if table.find(vulnFuncTbl, k) then 
-				return function()
-					error("[ Salad ]: "..tostring(k).." isn't available.")
-				end
-			elseif k == "GetObjects" or k == "LoadLocalAsset" or k == "LoadAsset" then
-				return function(self, id)
-					local ret = {[1] = game:FindFirstChildOfClass("InsertService"):LoadLocalAsset(id)}
-					return ret
-				end
-            elseif k == "HttpGet" or k == "HttpGetAsync" then
-				return function(self, url)    
-					assert(typeof(url)=="string", "Expected string for URL")
-					local ret
-					local returnBindable = Instance.new("BindableEvent")
-					game:GetService("HttpService"):RequestInternal({Url = url:gsub('roblox.com','roproxy.com'), CachePolicy = Enum.HttpCachePolicy.None, Headers = {["Salad-Fingerprint"] = gethwid() or "OUTDATED"}}):Start(function(success, data)
-						ret = data.Body
-
-						returnBindable:fire()
-					end)
-					returnBindable.Event:Wait()
-					return ret
-				end
-			elseif k == "GetService" or k == "FindService" or k == "service" or k == "Service" then
-				return function(self, service, ...)
-					if table.find(vulnInstanceTbl, service) then
-						return wrap(real[k](real, service))
+	
+		if type(real) == "userdata" then
+			local fake = newproxy(true)
+			local meta = getmetatable(fake)
+			
+			meta.__index = function(s,k)
+				if table.find(vulnFuncTbl, k) then 
+					return function()
+						error("[ Salad ]: "..tostring(k).." isn't available.")
 					end
-					return real[k](real, service)
+				elseif k == "GetObjects" or k == "LoadLocalAsset" or k == "LoadAsset" then
+					return function(self, id)
+						local ret = {[1] = game:FindFirstChildOfClass("InsertService"):LoadLocalAsset(id)}
+						return ret
+					end
+				elseif k == "HttpGet" or k == "HttpGetAsync" then
+					return function(self, url)    
+						assert(typeof(url)=="string", "Expected string for URL")
+						local ret
+						local returnBindable = Instance.new("BindableEvent")
+						game:GetService("HttpService"):RequestInternal({Url = url:gsub('roblox.com','roproxy.com'), CachePolicy = Enum.HttpCachePolicy.None, Headers = {["Salad-Fingerprint"] = gethwid() or "OUTDATED"}}):Start(function(success, data)
+							ret = data.Body
+	
+							returnBindable:fire()
+						end)
+						returnBindable.Event:Wait()
+						return ret
+					end
+				elseif k == "GetService" or k == "FindService" or k == "service" or k == "Service" then
+					return function(self, service, ...)
+						if table.find(vulnInstanceTbl, service) then
+							return wrap(real[k](real, service))
+						end
+						return real[k](real, service)
+					end
 				end
+	
+				if table.find(vulnInstanceTbl, tostring(real[k])) or table.find(vulnInstanceTbl, k) or table.find(vulnInstanceTbl, tostring(real)) then 
+					return wrap(real[k])
+				end
+	
+				return typeof(real[k]) == "Instance" and real[k] or wrap(real[k])
 			end
-
-			if table.find(vulnInstanceTbl, tostring(real[k])) or table.find(vulnInstanceTbl, k) or table.find(vulnInstanceTbl, tostring(real)) then 
-				return wrap(real[k])
+	
+			meta.__newindex = function(s,k,v)
+				real[k] = v
 			end
-
-			return typeof(real[k]) == "Instance" and real[k] or wrap(real[k])
-		end
-
-		meta.__newindex = function(s,k,v)
-			real[k] = v
-		end
-
-		meta.__tostring = function(s)
-			return tostring(real)
-		end
-
-		wrappercache[fake] = real
-
-		if table.find(vulnInstanceTbl, tostring(real)) then 
+	
+			meta.__tostring = function(s)
+				return tostring(real)
+			end
+	
+			wrappercache[fake] = real
+	
+			if table.find(vulnInstanceTbl, tostring(real)) then 
+				return fake
+			end
+	
+			return (typeof(real) == "Instance" and real.ClassName ~= "DataModel") and real or fake
+		elseif type(real) == "function" then
+			local fake = function(...)
+				local args = unwrap{...}
+				local results = wrap{real(unpack(args))}
+				return unpack(results)
+			end
+			wrappercache[fake] = real
 			return fake
+	
+		elseif type(real) == "table" then
+			local fake = {}
+			for k,v in next,real do
+	
+				fake[k] = (typeof(v) == "Instance" and v.ClassName ~= "DataModel") and v or wrap(v)
+			end
+			return fake
+	
+		else
+			return real
 		end
-
-		return (typeof(real) == "Instance" and real.ClassName ~= "DataModel") and real or fake
-	elseif type(real) == "function" then
-		local fake = function(...)
-			local args = unwrap{...}
-			local results = wrap{real(unpack(args))}
-			return unpack(results)
-		end
-		wrappercache[fake] = real
-		return fake
-
-	elseif type(real) == "table" then
-		local fake = {}
-		for k,v in next,real do
-
-			fake[k] = (typeof(v) == "Instance" and v.ClassName ~= "DataModel") and v or wrap(v)
-		end
-		return fake
-
-	else
-		return real
 	end
-end
-
-unwrap = function(wrapped)
-	if type(wrapped) == "table" then
-		local real = {}
-		for k,v in next,wrapped do
-			real[k] = unwrap(v)
+	
+	unwrap = function(wrapped)
+		if type(wrapped) == "table" then
+			local real = {}
+			for k,v in next,wrapped do
+				real[k] = unwrap(v)
+			end
+			return real
+		else
+			local real = wrappercache[wrapped]
+			if real == nil then
+				return wrapped
+			end
+			return real
 		end
-		return real
-	else
-		local real = wrappercache[wrapped]
-		if real == nil then
-			return wrapped
-		end
-		return real
 	end
-end
-getgenv().game = wrap(game)
-local oldlf = listfiles
-getgenv().listfiles = function(path)
-    if path == "" or path == "C:\\" then 
-        error("no")
-    else 
-        return oldlf(path)
-    end 
-end
-warn("[ Salad ]: Vulns mitigated.")
+	getgenv().game = wrap(game)
+	local oldlf = listfiles
+	getgenv().listfiles = function(path)
+		if path == "" or path == "C:\\" then 
+			error("no")
+		else 
+			return oldlf(path)
+		end 
+	end
+	warn("[ Salad ]: Vulns mitigated.")
+	shared.vulnsm = true 
+end 
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Salad FREE Injected",
