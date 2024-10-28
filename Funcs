@@ -1225,6 +1225,51 @@ getgenv().getcallingscript = function()
 	local Source = debug.info(1, 's')
 	for i, v in next, game:GetDescendants() do if v:GetFullName() == Source then return v end end
 end
+local cclosures = {}
+getgenv().newcclosure = function(a)
+    assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
+    
+    local cclosure = coroutine.wrap(function(...)
+        coroutine.yield(a(...))
+    end)
+    
+    table.insert(cclosures, cclosure)
+    return cclosure
+end
+newcclosure(newcclosure)
+
+getgenv().iscclosure = function(a)
+    assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
+    for b, c in next, cclosures do
+        if c == a then
+            return true
+        end
+    end
+    
+    return debug.info(a, "s") == "[C]"
+end
+
+getgenv().isexecutorclosure = function(a)
+    assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
+    
+    local result = false
+    
+    for b, c in next, getfenv() do
+        if c == a then
+            result = true
+        end
+    end
+    
+    if not result then
+        for b, c in next, cclosures do
+            if c == a then
+                result = true
+            end
+        end
+    end
+    
+    return result or islclosure(a)
+end
 getgenv().get_calling_script = getcallingscript 
 getgenv().isexecclosure = isexecutorclosure
 getgenv().is_executor_closure = isexecclosure
