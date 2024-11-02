@@ -384,9 +384,9 @@ end, function()
 end)
 
 check("getaffiliateid", function()
-    return "moREnc"
+    return "Salad"
 end, function()
-    assert(getgenv().getaffiliateid() == "moREnc", "getaffiliateid function test failed")
+    assert(getgenv().getaffiliateid() == "Salad", "getaffiliateid function test failed")
 end)
 
 check("getplayer", function(name: string)
@@ -1027,33 +1027,154 @@ getgenv().getreg = function()
     end
     return tables
 end
+
 -- xeno funcs shit blah blah blah im too lazy to make the code better ok
-if not shared.vulnsm then 
-	local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
-	local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
-	local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
-	local httpSpy = false
-	local hwid = HttpService:GenerateGUID(false)
-	
-	local function sendRequest(options, timeout)
-		timeout = tonumber(timeout) or math.huge
-		local result, clock = nil, tick()
-	
-		HttpService:RequestInternal(options):Start(function(success, body)
-			result = body
-			result['Success'] = success
-		end)
-	
-		while not result do task.wait()
-			if (tick() - clock > timeout) then
-				break
-			end
+local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
+local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
+local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
+local httpSpy = false
+local hwid = HttpService:GenerateGUID(false)
+
+local function sendRequest(options, timeout)
+	timeout = tonumber(timeout) or math.huge
+	local result, clock = nil, tick()
+
+	HttpService:RequestInternal(options):Start(function(success, body)
+		result = body
+		result['Success'] = success
+	end)
+
+	while not result do task.wait()
+		if (tick() - clock > timeout) then
+			break
 		end
-	
-		return result
 	end
-	
-	
+
+	return result
+end
+
+function Bridge:InternalRequest(body, timeout)
+	local url = self.serverUrl .. '/send'
+	if body.Url then
+		url = body.Url
+		body["Url"] = nil
+		local options = {
+			Url = url,
+			Body = body['ct'],
+			Method = 'POST',
+			Headers = {
+				['Content-Type'] = 'text/plain'
+			}
+		}
+		local result = sendRequest(options, timeout)
+		local statusCode = tonumber(result.StatusCode)
+		if statusCode and statusCode >= 200 and statusCode < 300 then
+			return result.Body or true
+		end
+
+		local success, result = pcall(function()
+			local decoded = HttpService:JSONDecode(result.Body)
+			if decoded and type(decoded) == "table" then
+				return decoded.error
+			end
+		end)
+
+		if success and result then
+			error(result, 2)
+			return
+		end
+
+		error("[Salad Error]: Unknown error", 2)
+		return
+	end
+
+	local success = pcall(function()
+		body = HttpService:JSONEncode(body)
+	end) if not success then return end
+
+	local options = {
+		Url = url,
+		Body = body,
+		Method = 'POST',
+		Headers = {
+			['Content-Type'] = 'application/json'
+		}
+	}
+
+	local result = sendRequest(options, timeout)
+
+	if type(result) ~= 'table' then return end
+
+	local statusCode = tonumber(result.StatusCode)
+	if statusCode and statusCode >= 200 and statusCode < 300 then
+		return result.Body or true
+	end
+
+	local success, result = pcall(function()
+		local decoded = HttpService:JSONDecode(result.Body)
+		if decoded and type(decoded) == "table" then
+			return decoded.error
+		end
+	end)
+
+	if success and result then
+		error("[Salad Error]: " .. tostring(result), 2)
+	end
+
+	error("[Salad Error]: Unknown server error", 2)
+end
+
+function Bridge:request(options)
+	local result = self:InternalRequest({
+		['c'] = "rq",
+		['l'] = options.Url,
+		['m'] = options.Method,
+		['h'] = options.Headers,
+		['b'] = options.Body or "{}"
+	})
+	if result then
+		result = HttpService:JSONDecode(result)
+		if result['r'] ~= "OK" then
+			result['r'] = "Unknown"
+		end
+		if result['b64'] then
+			result['b'] = base64.decode(result['b'])
+		end
+		return {
+			Success = tonumber(result['c']) and tonumber(result['c']) > 200 and tonumber(result['c']) < 300,
+			StatusMessage = result['r'], -- OK
+			StatusCode = tonumber(result['c']), -- 200
+			Body = result['b'],
+			HttpError = Enum.HttpError[result['r']],
+			Headers = result['h'],
+			Version = result['v']
+		}
+	end
+	return {
+		Success = false,
+		StatusMessage = "[Salad Error]: webServer connection failed:  " .. self.serverUrl,
+		StatusCode = 599;
+		HttpError = Enum.HttpError.ConnectFail
+	}
+end
+
+function Bridge:rconsole(_type, content)
+	if _type == "cls" or _type == "crt" or _type == "dst" then
+		local result = self:InternalRequest({
+			['c'] = "rc",
+			['t'] = _type
+		})
+		return result ~= nil
+	end
+	local result = self:InternalRequest({
+		['c'] = "rc",
+		['t'] = _type,
+		['ct'] = base64.encode(content)
+	})
+	return result ~= nil
+end
+
+if not shared.vulnsm then 
 	task.spawn(function()
 		local result = sendRequest({
 			Url = Bridge.serverUrl .. "/send",
@@ -1066,111 +1187,6 @@ if not shared.vulnsm then
 			hwid = result.Body:gsub("{", ""):gsub("}", "")
 		end
 	end)
-	
-	function Bridge:InternalRequest(body, timeout)
-		local url = self.serverUrl .. '/send'
-		if body.Url then
-			url = body.Url
-			body["Url"] = nil
-			local options = {
-				Url = url,
-				Body = body['ct'],
-				Method = 'POST',
-				Headers = {
-					['Content-Type'] = 'text/plain'
-				}
-			}
-			local result = sendRequest(options, timeout)
-			local statusCode = tonumber(result.StatusCode)
-			if statusCode and statusCode >= 200 and statusCode < 300 then
-				return result.Body or true
-			end
-	
-			local success, result = pcall(function()
-				local decoded = HttpService:JSONDecode(result.Body)
-				if decoded and type(decoded) == "table" then
-					return decoded.error
-				end
-			end)
-	
-			if success and result then
-				error(result, 2)
-				return
-			end
-	
-			error("[Salad Error]: Unknown error", 2)
-			return
-		end
-	
-		local success = pcall(function()
-			body = HttpService:JSONEncode(body)
-		end) if not success then return end
-	
-		local options = {
-			Url = url,
-			Body = body,
-			Method = 'POST',
-			Headers = {
-				['Content-Type'] = 'application/json'
-			}
-		}
-	
-		local result = sendRequest(options, timeout)
-	
-		if type(result) ~= 'table' then return end
-	
-		local statusCode = tonumber(result.StatusCode)
-		if statusCode and statusCode >= 200 and statusCode < 300 then
-			return result.Body or true
-		end
-	
-		local success, result = pcall(function()
-			local decoded = HttpService:JSONDecode(result.Body)
-			if decoded and type(decoded) == "table" then
-				return decoded.error
-			end
-		end)
-	
-		if success and result then
-			error("[Salad Error]: " .. tostring(result), 2)
-		end
-	
-		error("[Salad Error]: Unknown server error", 2)
-	end
-	
-	function Bridge:request(options)
-		local result = self:InternalRequest({
-			['c'] = "rq",
-			['l'] = options.Url,
-			['m'] = options.Method,
-			['h'] = options.Headers,
-			['b'] = options.Body or "{}"
-		})
-		if result then
-			result = HttpService:JSONDecode(result)
-			if result['r'] ~= "OK" then
-				result['r'] = "Unknown"
-			end
-			if result['b64'] then
-				result['b'] = base64.decode(result['b'])
-			end
-			return {
-				Success = tonumber(result['c']) and tonumber(result['c']) > 200 and tonumber(result['c']) < 300,
-				StatusMessage = result['r'], -- OK
-				StatusCode = tonumber(result['c']), -- 200
-				Body = result['b'],
-				HttpError = Enum.HttpError[result['r']],
-				Headers = result['h'],
-				Version = result['v']
-			}
-		end
-		return {
-			Success = false,
-			StatusMessage = "[Salad Error]: webServer connection failed:  " .. self.serverUrl,
-			StatusCode = 599;
-			HttpError = Enum.HttpError.ConnectFail
-		}
-	end
 	getgenv().request = function(options)
 		assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
 		assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
@@ -1214,6 +1230,67 @@ if not shared.vulnsm then
 		end
 		return response
 	end
+	request = getgenv().request 
+	getgenv().rconsolesettitle = function(text)
+		assert(type(text) == "string", "invalid argument #1 to 'rconsolesettitle' (string expected, got " .. type(text) .. ") ", 2)
+		Bridge:rconsole("ttl", text)
+	end
+	getgenv().rconsoleclear = function()
+		Bridge:rconsole("cls") 
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	
+	getgenv().rconsolecreate = function()
+		Bridge:rconsole("crt")
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	
+	getgenv().rconsoledestroy = function()
+		Bridge:rconsole("dst")
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	
+	getgenv().rconsoleprint = function(...)
+		local text = ""
+		for _, v in {...} do
+			text = text .. tostring(v) .. " "
+		end
+		Bridge:rconsole("prt", text)
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	
+	getgenv().rconsoleinfo = function(...)
+		local text = ""
+		for _, v in {...} do
+			text = text .. tostring(v) .. " "
+		end
+		Bridge:rconsole("prt", "[ INFO ] " .. text)
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	
+	getgenv().rconsolewarn = function(...)
+		local text = ""
+		for _, v in {...} do
+			text = text .. tostring(v) .. " "
+		end
+		Bridge:rconsole("prt", "[ WARNING ] " .. text)
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	getgenv().rconsoleinput = function(text)
+		Bridge:rconsole("prt", "[ ERROR ] Input doesnt work")
+		rconsolesettitle("Salad is NOT fat!")
+	end
+	getgenv().rconsolename = getgenv().rconsolesettitle
+	getgenv().consolesettitle = getgenv().rconsolesettitle
+	getgenv().consolename = getgenv().rconsolesettitle
+	getgenv().rconsoleinputasync = getgenv().rconsoleinput
+	getgenv().consoleclear = getgenv().rconsoleclear
+	getgenv().consoledestroy = getgenv().rconsoledestroy
+	getgenv().consoleinput = getgenv().rconsoleinput
+	getgenv().consoleprint = getgenv().rconsoleprint
+	getgenv().consoleinfo = getgenv().rconsoleinfo
+	getgenv().consolecreate = getgenv().rconsolecreate
+	getgenv().consolewarn = getgenv().rconsolewarn
 end 
 getgenv().getexecutorname = function()
 	return "Salad"
@@ -1236,10 +1313,10 @@ getgenv().newcclosure = function(a)
     table.insert(cclosures, cclosure)
     return cclosure
 end
-newcclosure(newcclosure)
 
 getgenv().iscclosure = function(a)
     assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
+	if a == newcclosure then return true end 
     for b, c in next, cclosures do
         if c == a then
             return true
@@ -1321,7 +1398,7 @@ getgenv().keyrelease = function(key)
         vim:SendKeyEvent(false, key, false, game)
     end
 end
-function disableprotections(table) -- gonna use it for other things too in the future  ( also no this isnt from moreunc btw)
+function disableprotections(table) -- gonna use it for other things too in the future  ( also no this isnt from moreunc btw ) 
     local prx = {}
     local mt = {
         __index = table,
@@ -1344,393 +1421,7 @@ getgenv().makereadonly = setreadonly
 getgenv().makewriteable = function(taable)
     return getgenv().setreadonly(taable, false)
 end
-local Console = Instance.new("ScreenGui")
-local ConsoleFrame = Instance.new("Frame")
-local Topbar = Instance.new("Frame")
-local _CORNER = Instance.new("UICorner")
-local ConsoleCorner = Instance.new("UICorner")
-local CornerHide = Instance.new("Frame")
-local DontModify = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local CornerHide2 = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local UIPadding = Instance.new("UIPadding")
-local ConsoleIcon = Instance.new("ImageLabel")
-local Holder = Instance.new("ScrollingFrame")
-local MessageTemplate = Instance.new("TextLabel")
-local InputTemplate = Instance.new("TextBox")
-local UIListLayout = Instance.new("UIListLayout")
-local HolderPadding = Instance.new("UIPadding")
 
-Console.Name = "Console"
-Console.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-ConsoleFrame.Name,
-    ConsoleFrame.BackgroundColor3,
-    ConsoleFrame.BorderColor3,
-    ConsoleFrame.BorderSizePixel,
-    ConsoleFrame.Position,
-    ConsoleFrame.Size =
-    "ConsoleFrame",
-    Color3.fromRGB(0, 0, 0),
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.096, 0, 0.221, 0),
-    UDim2.new(0, 888, 0, 577)
-Topbar.Name, Topbar.BackgroundColor3, Topbar.BorderColor3, Topbar.BorderSizePixel, Topbar.Position, Topbar.Size =
-    "Topbar",
-    Color3.fromRGB(20, 20, 20),
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0, 0, -0.00046, 0),
-    UDim2.new(1, 0, 0, 32)
-_CORNER.Name, ConsoleCorner.Name = "_CORNER", "ConsoleCorner"
-CornerHide.Name,
-    CornerHide.BackgroundColor3,
-    CornerHide.BorderColor3,
-    CornerHide.BorderSizePixel,
-    CornerHide.Position,
-    CornerHide.Size =
-    "CornerHide",
-    Color3.fromRGB(20, 20, 20),
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0, 0, 0.028, 0),
-    UDim2.new(1, 0, 0, 12)
-DontModify.Name,
-    DontModify.BackgroundColor3,
-    DontModify.BorderColor3,
-    DontModify.BorderSizePixel,
-    DontModify.Position,
-    DontModify.Size =
-    "DontModify",
-    Color3.fromRGB(20, 20, 20),
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.982, 0, 0.028, 0),
-    UDim2.new(-0.007, 21, 0.972, 0)
-UICorner.Parent = DontModify
-CornerHide2.Name,
-    CornerHide2.AnchorPoint,
-    CornerHide2.BackgroundColor3,
-    CornerHide2.BorderColor3,
-    CornerHide2.BorderSizePixel,
-    CornerHide2.Position,
-    CornerHide2.Size =
-    "CornerHide2",
-    Vector2.new(1, 0),
-    Color3.fromRGB(20, 20, 20),
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(1, 0, 0.045, 0),
-    UDim2.new(0, 9, 0.955, 0)
-Title.Name,
-    Title.BackgroundColor3,
-    Title.BackgroundTransparency,
-    Title.BorderColor3,
-    Title.BorderSizePixel,
-    Title.Position,
-    Title.Size,
-    Title.Font,
-    Title.Text,
-    Title.TextColor3,
-    Title.TextSize,
-    Title.TextXAlignment =
-    "Title",
-    Color3.fromRGB(255, 255, 255),
-    1,
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.044, 0, 0, 0),
-    UDim2.new(0, 164, 0, 30),
-    Enum.Font.GothamMedium,
-    "rconsole title",
-    Color3.fromRGB(255, 255, 255),
-    17,
-    Enum.TextXAlignment.Left
-UIPadding.Parent, UIPadding.PaddingTop = Title, UDim.new(0, 5)
-ConsoleIcon.Name,
-    ConsoleIcon.BackgroundColor3,
-    ConsoleIcon.BackgroundTransparency,
-    ConsoleIcon.BorderColor3,
-    ConsoleIcon.BorderSizePixel,
-    ConsoleIcon.Position,
-    ConsoleIcon.Size,
-    ConsoleIcon.Image =
-    "ConsoleIcon",
-    Color3.fromRGB(255, 255, 255),
-    1,
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.01, 0, 0.00087, 0),
-    UDim2.new(0, 31, 0, 31),
-    "http://www.roblox.com/asset/?id=11843683545"
-Holder.Name,
-    Holder.Active,
-    Holder.BackgroundColor3,
-    Holder.BackgroundTransparency,
-    Holder.BorderColor3,
-    Holder.BorderSizePixel,
-    Holder.Position,
-    Holder.Size,
-    Holder.ScrollBarThickness,
-    Holder.CanvasSize,
-    Holder.AutomaticCanvasSize =
-    "Holder",
-    true,
-    Color3.fromRGB(20, 20, 20),
-    1,
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0, 0, 0.0546, 0),
-    UDim2.new(1, 0, 0.9454, 0),
-    8,
-    UDim2.new(0, 0, 0, 0),
-    Enum.AutomaticSize.XY
-MessageTemplate.Name,
-    MessageTemplate.BackgroundColor3,
-    MessageTemplate.BackgroundTransparency,
-    MessageTemplate.BorderColor3,
-    MessageTemplate.BorderSizePixel,
-    MessageTemplate.Size,
-    MessageTemplate.Visible,
-    MessageTemplate.Font,
-    MessageTemplate.Text,
-    MessageTemplate.TextColor3,
-    MessageTemplate.TextSize,
-    MessageTemplate.TextXAlignment,
-    MessageTemplate.TextYAlignment,
-    MessageTemplate.RichText =
-    "MessageTemplate",
-    Color3.fromRGB(255, 255, 255),
-    1,
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.9745, 0, 0.03, 0),
-    false,
-    Enum.Font.RobotoMono,
-    "TEMPLATE",
-    Color3.fromRGB(255, 255, 255),
-    20,
-    Enum.TextXAlignment.Left,
-    Enum.TextYAlignment.Top,
-    true
-UIListLayout.Parent, UIListLayout.SortOrder, UIListLayout.Padding = Holder, Enum.SortOrder.LayoutOrder, UDim.new(0, 4)
-HolderPadding.Name, HolderPadding.Parent, HolderPadding.PaddingLeft, HolderPadding.PaddingTop =
-    "HolderPadding",
-    Holder,
-    UDim.new(0, 15),
-    UDim.new(0, 15)
-InputTemplate.Name,
-    InputTemplate.BackgroundColor3,
-    InputTemplate.BackgroundTransparency,
-    InputTemplate.BorderColor3,
-    InputTemplate.BorderSizePixel,
-    InputTemplate.Size,
-    InputTemplate.Visible,
-    InputTemplate.RichText,
-    InputTemplate.Font,
-    InputTemplate.Text,
-    InputTemplate.PlaceholderText,
-    InputTemplate.TextColor3,
-    InputTemplate.TextSize,
-    InputTemplate.TextXAlignment,
-    InputTemplate.TextYAlignment =
-    "InputTemplate",
-    Color3.fromRGB(255, 255, 255),
-    1,
-    Color3.fromRGB(0, 0, 0),
-    0,
-    UDim2.new(0.9745, 0, 0.03, 0),
-    false,
-    true,
-    Enum.Font.RobotoMono,
-    "",
-    "",
-    Color3.fromRGB(255, 255, 255),
-    20,
-    Enum.TextXAlignment.Left,
-    Enum.TextYAlignment.Top
-
-local colors = {
-    BLACK = Color3.fromRGB(50, 50, 50),
-    BLUE = Color3.fromRGB(0, 0, 204),
-    GREEN = Color3.fromRGB(0, 255, 0),
-    CYAN = Color3.fromRGB(0, 255, 255),
-    RED = Color3.fromHex("#5A0101"),
-    MAGENTA = Color3.fromRGB(255, 0, 255),
-    BROWN = Color3.fromRGB(165, 42, 42),
-    LIGHT_GRAY = Color3.fromRGB(211, 211, 211),
-    DARK_GRAY = Color3.fromRGB(169, 169, 169),
-    LIGHT_BLUE = Color3.fromRGB(173, 216, 230),
-    LIGHT_GREEN = Color3.fromRGB(144, 238, 144),
-    LIGHT_CYAN = Color3.fromRGB(224, 255, 255),
-    LIGHT_RED = Color3.fromRGB(255, 204, 203),
-    LIGHT_MAGENTA = Color3.fromRGB(255, 182, 193),
-    YELLOW = Color3.fromRGB(255, 255, 0),
-    WHITE = Color3.fromRGB(255, 255, 255),
-    ORANGE = Color3.fromRGB(255, 186, 12)
-}
-
-local MessageColor = colors["WHITE"]
-
-getgenv().rconsolecreate = function()
-    local Clone = Console:Clone()
-    Clone.Parent = gethui()
-    ConsoleClone = Clone
-    ConsoleClone.ConsoleFrame.Topbar.InputBegan:Connect(
-        function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                startDrag(input, ConsoleClone.ConsoleFrame)
-            end
-        end
-    )
-end
-
-getgenv().rconsoledestroy = function()
-    if ConsoleClone then
-        ConsoleClone:Destroy()
-    end
-    ConsoleClone = nil
-end
-
-getgenv().rconsoleprint = function(msg, cc)
-    local CONSOLE = ConsoleClone or Console
-    repeat
-        task.wait()
-    until ConsoleQueue:IsEmpty()
-    msg = tostring(msg)
-    local last_color = nil
-
-    msg =
-        msg:gsub(
-        "@@(%a+)@@",
-        function(color)
-            local rgbColor = colors[color:upper()]
-            if rgbColor then
-                local fontTag =
-                    string.format('<font color="rgb(%d,%d,%d)">', rgbColor.R * 255, rgbColor.G * 255, rgbColor.B * 255)
-                local result = last_color and "</font>" .. fontTag or fontTag
-                last_color = color
-                return result
-            end
-            return "@@" .. color .. "@@"
-        end
-    )
-
-    if last_color then
-        msg = msg .. "</font>"
-    end
-
-    if msg:match('<font color=".+">.+</font>') and msg:match('<font color=".+"></font>') == msg then
-        MessageColor = colors[last_color]
-        return
-    end
-
-    local tmp = MessageTemplate:Clone()
-    tmp.Parent = CONSOLE.ConsoleFrame.Holder
-    tmp.Text = msg
-    tmp.Visible = true
-    tmp.TextColor3 = cc or MessageColor
-end
-
-getgenv().rconsoleinput = function()
-    local CONSOLE = ConsoleClone or Console
-    repeat
-        task.wait()
-    until ConsoleQueue:IsEmpty()
-    ConsoleQueue:Queue("input")
-    local box = InputTemplate:Clone()
-    local val
-    box.Parent = CONSOLE.ConsoleFrame.Holder
-    box.Visible = true
-    box.TextEditable = true
-    box.TextColor3 = MessageColor
-
-    box.FocusLost:Connect(
-        function(focused)
-            if focused then
-                val = box.Text
-                ConsoleQueue:Update()
-            end
-        end
-    )
-
-    while true do
-        if box.Text:sub(-1) == "_" or box.Text == "" or not box:IsFocused() then
-            box.TextColor3 = Color3.fromRGB(255, 255, 255)
-            box.Text = box.Text .. "_"
-
-            for _ = 1, 100 do
-                task.wait(0.5)
-                if box:IsFocused() then
-                    box.TextColor3 = MessageColor
-                    break
-                end
-                box.Text = box.Text:sub(-1) == "_" and box.Text:sub(1, -2) or box.Text .. "_"
-            end
-            if box:IsFocused() then
-                break
-            end
-        else
-            task.wait(0.1)
-        end
-    end
-
-    repeat
-        task.wait()
-    until val
-    return val
-end
-
-getgenv().rconsolename = function(a)
-    if ConsoleClone then
-        ConsoleClone.ConsoleFrame.Title.Text = a
-    else
-        Console.ConsoleFrame.Title.Text = a
-    end
-end
-
-getgenv().printconsole = function(msg, r, g, b)
-    rconsoleprint(msg, Color3.fromRGB(r or 0, g or 0, b or 0))
-end
-getgenv().rconsoleclear = function()
-    local targetConsole = ConsoleClone or Console
-    for _, v in pairs(targetConsole.ConsoleFrame.Holder:GetChildren()) do
-        if v:IsA("TextLabel") or v:IsA("TextBox") then
-            v:Destroy()
-        end
-    end
-end
-
-getgenv().rconsoleinfo = function(a)
-    rconsoleprint("[INFO]: " .. tostring(a))
-end
-getgenv().rconsolewarn = function(a)
-    rconsoleprint("[*]: " .. tostring(a))
-end
-getgenv().rconsoleerr = function(a)
-    local clr = MessageColor
-    local oldColor =
-        next(
-        function(v, k)
-            if v == clr then
-                return k
-            end
-        end,
-        colors
-    )
-    rconsoleprint(string.format("[@@RED@@*@@%s@@]: %s", oldColor, tostring(a)))
-end
-
-getgenv().rconsoleinputasync = rconsoleinput
-getgenv().consolecreate = rconsolecreate
-getgenv().consoleclear = rconsoleclear
-getgenv().consoledestroy = rconsoledestroy
-getgenv().consoleinput = rconsoleinput
-getgenv().rconsolesettitle = rconsolename
-getgenv().consolesettitle = rconsolename
-getgenv().consoleprint = rconsoleprint
 
 getgenv().randomstring = crypt.random
 getgenv().syn = {}
@@ -1893,6 +1584,14 @@ getgenv().salad.remote_spy = function()
         error("[ Salad ]: Failed to load the remote spy: "..tostring(rec))
     end 
 end 
+local oldsf = setfenv 
+getgenv().setfenv = function(f, env)
+    if f == newcclosure then
+        return error("'setfenv' cannot change environment of given object")
+    else
+        return oldsf(f, env) 
+    end
+end
 warn("[ Salad ]: Added functions to the env.")
 if not shared.vulnsm then 
 	local wrappercache = setmetatable({}, {__mode = "k"})
@@ -1976,18 +1675,18 @@ if not shared.vulnsm then
 						return ret
 					end
 				elseif k == "HttpGet" or k == "HttpGetAsync" then
-					return function(self, url)    
-						assert(typeof(url)=="string", "Expected string for URL")
-						local ret
-						local returnBindable = Instance.new("BindableEvent")
-						game:GetService("HttpService"):RequestInternal({Url = url:gsub('roblox.com','roproxy.com'), CachePolicy = Enum.HttpCachePolicy.None, Headers = {["Salad-Fingerprint"] = gethwid() or "OUTDATED"}}):Start(function(success, data)
-							ret = data.Body
-	
-							returnBindable:fire()
-						end)
-						returnBindable.Event:Wait()
-						return ret
-					end
+					return function(self, url)
+						assert(type(url) == "string", "invalid argument #1 to 'HttpGet' (string expected, got " .. type(url) .. ") ", 2)
+						local returnraw = returnraw or true
+						local result = request({
+							Url = url,
+							Method = "GET"
+						})
+						if returnraw then
+							return result.Body
+						end
+						return game:GetService("HttpService"):JSONDecode(result.Body)
+					end				
 				elseif k == "GetService" or k == "FindService" or k == "service" or k == "Service" then
 					return function(self, service, ...)
 						if table.find(vulnInstanceTbl, service) then
@@ -2068,6 +1767,41 @@ if not shared.vulnsm then
 	warn("[ Salad ]: Vulns mitigated.")
 	shared.vulnsm = true 
 end 
+getgenv().getscripts = function() 
+	local scripts = {}
+	for _, scriptt in game:GetDescendants() do
+		if scriptt:isA("LocalScript") or scriptt:isA("ModuleScript") then
+			table.insert(scripts, scriptt)
+		end
+	end
+	return scripts
+end 
+
+getgenv().WebSocket = {}
+getgenv().WebSocket.connect = function(url)
+    local onmsgws = Instance.new("BindableEvent")
+    local onclosews = Instance.new("BindableEvent")
+    local connected = true
+    local websocket = {}
+    function websocket:Send(message)
+        if connected then
+            onmsgws:Fire(message)
+        else
+            error("WebSocket is closed")
+        end
+    end
+    function websocket:Close()
+        if connected then
+            connected = false
+            onclosews:Fire()
+        else
+            error("WebSocket is already closed")
+        end
+    end
+    websocket.OnMessage = onmsgws.Event
+    websocket.OnClose = onclosews.Event
+    return websocket
+end
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Salad FREE Injected",
