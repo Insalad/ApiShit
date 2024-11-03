@@ -1892,16 +1892,16 @@ getgenv().WebSocket.connect = function(url)
     return websocket
 end
 
-getgenv().setfflag = function(flagName, value)
+getgenv().setfflag = function(fn, value)
     if not getgenv().ffs then
         getgenv().ffs = {}
     end
-    getgenv().ffs[flagName] = value
+    getgenv().ffs[fn] = value
 end
 
-getgenv().getfflag = function(flagName)
-    if getgenv().ffs and getgenv().ffs[flagName] ~= nil then
-        return getgenv().ffs[flagName]
+getgenv().getfflag = function(fn)
+    if getgenv().ffs and getgenv().ffs[fn] ~= nil then
+        return getgenv().ffs[fn]
     else
         return nil  
     end
