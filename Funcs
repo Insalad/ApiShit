@@ -1811,4 +1811,4 @@ if not shared.notified then
     })
     shared.notified = true 
 end 
-game = workspace.Parent 
+getgenv().game = workspace.Parent 
