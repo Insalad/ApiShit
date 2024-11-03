@@ -1280,6 +1280,11 @@ if not shared.vulnsm then
 		Bridge:rconsole("prt", "[ ERROR ] Input doesnt work")
 		rconsolesettitle("Salad is NOT fat!")
 	end
+	getgenv().rconsoleerr = function(text)
+		Bridge:rconsole("prt", "[ ERROR ] " .. text)
+		rconsolesettitle("Salad is NOT fat!")
+	end 
+	getgenv().rconsoleerror = getgenv().rconsoleerr 
 	getgenv().rconsolename = getgenv().rconsolesettitle
 	getgenv().consolesettitle = getgenv().rconsolesettitle
 	getgenv().consolename = getgenv().rconsolesettitle
@@ -1592,7 +1597,6 @@ getgenv().setfenv = function(f, env)
         return oldsf(f, env) 
     end
 end
-warn("[ Salad ]: Added functions to the env.")
 if not shared.vulnsm then 
 	local wrappercache = setmetatable({}, {__mode = "k"})
 	local vulnInstanceTbl = {
@@ -1777,6 +1781,91 @@ getgenv().getscripts = function()
 	return scripts
 end 
 
+getgenv().dumpbytecode = getscriptbytecode 
+getgenv().loadfileasync = loadfile
+getgenv().clearconsole = rconsoleclear 
+getgenv().printconsole = rconsoleprint 
+getgenv().getsynasset = getcustomasset 
+getgenv().debug.getregistry = getreg 
+getgenv().readfileasync = readfile 
+getgenv().writefileasync = writefile
+getgenv().appendfileasync = appendfile 
+getgenv().saveplace = saveinstance 
+getgenv().protect_gui = syn.protect_gui 
+getgenv().unprotect_gui = syn.unprotect_gui 
+getgenv().set_thread_identity = setthreadidentity 
+getgenv().get_thread_identity = getthreadidentity 
+
+getgenv().debug.getconstant = function(f, i) 
+    return "Not Implemented"
+end 
+getgenv().debug.getconstants = function(f) 
+    return "Not Implemented"
+end 
+getgenv().debug.getproto = function(f, i, e) 
+    return "Not Implemented"
+end 
+getgenv().debug.getprotos = function(f) 
+    return "Not Implemented"
+end 
+getgenv().debug.getstack = function(f, i) 
+    return "Not Implemented"
+end 
+getgenv().debug.getupvalue = function(f, i) 
+    return "Not Implemented"
+end 
+getgenv().debug.getupvalues = function(f) 
+    return "Not Implemented"
+end 
+getgenv().debug.setconstant = function(f, i, v) 
+    return "Not Implemented"
+end 
+getgenv().debug.setstack = function(f, i, v) 
+    return "Not Implemented"
+end 
+getgenv().debug.validlevel = function(f, i, v) 
+    return "Not Implemented"
+end 
+getgenv().debug.getcallstack = function(f, i, v) 
+    return "Not Implemented"
+end 
+getgenv().debug.isvalidlevel = getgenv().debug.validlevel
+getgenv().is_our_closure = isexecutorclosure 
+getgenv().issynapsefunction = isexecutorclosure
+getgenv().run_on_actor = function(actor, code)
+    local func, err = loadstring(code)
+    if not func then
+        return warn("no func?")
+    end
+    local success, exec = pcall(function()
+        setfenv(func, getfenv()) 
+        func()
+    end)
+    if not success then
+        warn("execution failed: " .. tostring(exec))
+    end
+end
+local keyshit = {}
+getgenv().iskeydown = function(key)
+    return keyshit[key] == true
+end
+getgenv().iskeytoggled = function(key)
+    return keyshit[key] == nil and false or keyshit[key]
+end
+game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+    if not processed then
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            keyshit[input.KeyCode] = true
+        end
+    end
+end)
+game:GetService("UserInputService").InputEnded:Connect(function(input, processed)
+    if not processed then
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            keyshit[input.KeyCode] = false
+        end
+    end
+end)
 getgenv().WebSocket = {}
 getgenv().WebSocket.connect = function(url)
     local onmsgws = Instance.new("BindableEvent")
@@ -1787,7 +1876,7 @@ getgenv().WebSocket.connect = function(url)
         if connected then
             onmsgws:Fire(message)
         else
-            error("WebSocket is closed")
+            warn("WebSocket is closed")
         end
     end
     function websocket:Close()
@@ -1795,13 +1884,119 @@ getgenv().WebSocket.connect = function(url)
             connected = false
             onclosews:Fire()
         else
-            error("WebSocket is already closed")
+            warn("WebSocket is already closed")
         end
     end
     websocket.OnMessage = onmsgws.Event
     websocket.OnClose = onclosews.Event
     return websocket
 end
+
+getgenv().setfflag = function(flagName, value)
+    if not getgenv().ffs then
+        getgenv().ffs = {}
+    end
+    getgenv().ffs[flagName] = value
+end
+
+getgenv().getfflag = function(flagName)
+    if getgenv().ffs and getgenv().ffs[flagName] ~= nil then
+        return getgenv().ffs[flagName]
+    else
+        return nil  
+    end
+end
+
+getgenv().ogfs = {}
+getgenv().restorefunction = function(original)
+    if type(original) ~= "function" then
+        error("The argument must be a function (original func).")
+    end
+    for name, func in pairs(getgenv().ogfs) do
+        if func == original then
+            getgenv()[name] = original  
+            getgenv().ogfs[name] = nil  
+            return
+        end
+    end
+    error("No original function found to restore.")
+end
+
+getgenv().isfunctionhooked = function(original)
+    if type(original) ~= "function" then
+        error("The argument must be a function (original func).")
+    end
+    for _, func in pairs(getgenv().ogfs) do
+        if func == original then
+            return true 
+        end
+    end
+    return false  
+end
+getgenv().hooksignal = function(signal, hook)
+    if not signal or not hook or not signal.Connect then
+        error("Invalid signal or hook function.")
+    end
+    return signal.Connect(signal, function(...)
+        return hook(...)
+    end)
+end
+getgenv().hookfunction = function(original, hook)
+    if type(original) ~= "function" then
+        error("The first arg must be a function (original func).")
+    end
+    if type(hook) ~= "function" then
+        error("The second arg must be a function (hook).")
+    end
+    local info = debug.getinfo(original)
+    local name = info and info.name or tostring(original)
+    getgenv().ogfs[name] = original 
+    local hooked = function(...)
+        return hook(...)
+    end
+    getgenv()[name] = hooked  
+    return hooked
+end
+getgenv().untouchedshit = {}
+getgenv().setuntouched = function(obj)
+    getgenv().untouchedshit[obj] = true
+end
+getgenv().isuntouched = function(obj)
+    return getgenv().untouchedshit[obj] == true
+end
+getgenv().cfiresignal = function(signalName, ...)
+    local signal = Instance.new("BindableEvent")
+    signal.Name = signalName
+    signal:Fire(...)
+    return signal
+end
+getgenv().replicatesignal = function(signal)
+    if not signal or not signal:IsA("BindableEvent") then
+        error("Invalid signal provided")
+    end
+    signal:Fire()
+end
+getgenv().cansignalreplicate = function(signal)
+    if typeof(signal) == "RBXScriptSignal" then
+        return true 
+    end
+    return false 
+end
+getgenv().clear_teleport_queue = function()
+    queue_on_teleport("")
+end 
+getgenv().checkcallstack = checkcaller 
+getgenv().getscriptthread = function(script)
+    if not script or not script:IsA("LocalScript") then
+        error("Argument must be a LocalScript")
+    end
+    local thread = coroutine.create(function()
+        script:Invoke()
+    end)
+    coroutine.resume(thread)
+    return thread
+end
+warn("[ Salad ]: Added functions to the env.")
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Salad FREE Injected",
