@@ -1802,7 +1802,6 @@ getgenv().WebSocket.connect = function(url)
     websocket.OnClose = onclosews.Event
     return websocket
 end
-getgenv().game = workspace.Parent 
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Salad FREE Injected",
