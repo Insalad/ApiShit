@@ -1417,6 +1417,17 @@ getgenv().setreadonly = function(taable, boolean)
     end
 end
 
+local oldcr = coroutine.resume
+getgenv().coroutine = disableprotections(coroutine)
+getgenv().coroutine.resume = function(co, ...)
+    if coroutine.status(co) == "dead" then
+        return true  
+    else
+        return oldcr(co, ...)  
+    end
+end
+
+
 getgenv().makereadonly = setreadonly
 getgenv().makewriteable = function(taable)
     return getgenv().setreadonly(taable, false)
