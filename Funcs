@@ -1032,7 +1032,7 @@ end
 local supportedMethods = {"GET", "POST", "PUT", "DELETE", "PATCH"}
 local HttpService, UserInputService, InsertService = game:FindService("HttpService"), game:FindService("UserInputService"), game:FindService("InsertService")
 local Bridge, ProcessID = {serverUrl = "http://localhost:19283"}, nil
-local httpSpy = false
+shared.httpspy = false
 local hwid = HttpService:GenerateGUID(false)
 
 local function sendRequest(options, timeout)
@@ -1173,6 +1173,39 @@ function Bridge:rconsole(_type, content)
 	})
 	return result ~= nil
 end
+function checkurl(url)
+    local blocked = {
+        "https://v4.ident.me/",
+        "http://ip-api.com/json",
+        "https://ipinfo.io/",
+        "http://checkip.amazonaws.com/"
+    }
+    for _, blocked in ipairs(blocked) do
+        if url:find(blocked) then
+            return true
+        end
+    end
+    return false
+end
+function protection(json)
+    local pdiddy = { -- every possible shit!!!
+        status = "[ Salad ]: Protected | discord.gg/getsalad",
+        country = "[ Salad ]: Protected | discord.gg/getsalad",
+        countryCode = "[ Salad ]: Protected | discord.gg/getsalad",
+        region = "[ Salad ]: Protected | discord.gg/getsalad",
+        regionName = "[ Salad ]: Protected | discord.gg/getsalad",
+        city = "[ Salad ]: Protected | discord.gg/getsalad",
+        zip = "[ Salad ]: Protected | discord.gg/getsalad",
+        lat = "[ Salad ]: Protected | discord.gg/getsalad",
+        lon = "[ Salad ]: Protected | discord.gg/getsalad",
+        timezone = "[ Salad ]: Protected | discord.gg/getsalad",
+        isp = "[ Salad ]: Protected | discord.gg/getsalad",
+        org = "[ Salad ]: Protected | discord.gg/getsalad",
+        as = "[ Salad ]: Protected | discord.gg/getsalad",
+        query = "[ Salad ]: Anti-ip-logger | discord.gg/getsalad"
+    }
+    return game:GetService("HttpService"):JSONEncode(pdiddy)
+end
 
 if not shared.vulnsm then 
 	task.spawn(function()
@@ -1187,9 +1220,20 @@ if not shared.vulnsm then
 			hwid = result.Body:gsub("{", ""):gsub("}", "")
 		end
 	end)
+
 	getgenv().request = function(options)
 		assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
 		assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
+		if shared.antilogger and checkurl(options.Url) then
+			warn("[ Salad ]: A script tried to get your IP; URL: ", options.Url)
+			return {
+				Success = false,
+				StatusCode = 403,
+				StatusMessage = "Forbidden",
+				Body = "[ Salad ]: Anti-ip-logger; discord.gg/getsalad",
+				Headers = {}
+			}
+		end
 		options.Method = options.Method or "GET"
 		options.Method = options.Method:upper()
 		assert(table.find(supportedMethods, options.Method), "invalid option 'Method' for argument #1 to 'request' (a valid http method expected, got '" .. options.Method .. "') ", 2)
@@ -1201,8 +1245,8 @@ if not shared.vulnsm then
 		if options.Headers then assert(type(options.Headers) == "table", "invalid option 'Headers' for argument #1 to 'request' (table expected, got " .. type(options.Url) .. ") ", 2) end
 		options.Body = options.Body or "e30=" 
 		options.Headers = options.Headers or {}
-		if httpSpy then
-			rconsoleprint("HTTPSPY:\nUrl: " .. options.Url .. 
+		if shared.httpspy then
+			print("[ HTTPSPY ]:\nUrl: " .. options.Url .. 
 				"\nMethod: " .. options.Method .. 
 				"\nBody: " .. options.Body .. 
 				"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
@@ -1219,8 +1263,11 @@ if not shared.vulnsm then
 			["PlaceId"] = tostring(game.PlaceId)
 		})
 		local response = Bridge:request(options)
-		if httpSpy then
-			rconsoleprint("Response:\nStatusCode: " .. tostring(response.StatusCode) ..
+		if shared.antilogger and response and response.Body then
+			response.Body = protection(response.Body)
+		end
+		if shared.httpspy then
+			print("[ HTTPSPY X2 ]: Response:\nStatusCode: " .. tostring(response.StatusCode) ..
 				"\nStatusMessage: " .. tostring(response.StatusMessage) ..
 				"\nSuccess: " .. tostring(response.Success) ..
 				"\nBody: " .. tostring(response.Body) ..
@@ -1588,6 +1635,18 @@ getgenv().salad.remote_spy = function()
     if not suc then 
         error("[ Salad ]: Failed to load the remote spy: "..tostring(rec))
     end 
+end 
+getgenv().salad.enable_httpspy = function()
+	shared.httpspy = true 
+end 
+getgenv().salad.disable_httpspy = function()
+	shared.httpspy = false 
+end 
+getgenv().salad.enable_antilogger = function()
+	shared.antilogger = true 
+end 
+getgenv().salad.disable_antilogger = function()
+	shared.antilogger = false 
 end 
 local oldsf = setfenv 
 getgenv().setfenv = function(f, env)
