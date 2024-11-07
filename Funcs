@@ -2181,16 +2181,6 @@ getgenv().require = function(scr) -- not mine
 			end
 		end
 		return
-	elseif typeof(scr) == "Instance" and scr.ClassName == "ModuleScript" then
-		if scr.Name == "MainModule" then 
-			if scr.Source ~= "" then 
-				return loadstring(scr.Source)()
-			else 
-				warn("[ Salad ]: Require failed: cant require a modulescript with no code")
-			end
-		else 
-			warn("[ Salad ]: Require failed: require asset id failed")
-		end
 	end
 end
 warn("[ Salad ]: Added functions to the env.")
