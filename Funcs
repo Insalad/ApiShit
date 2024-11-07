@@ -2162,6 +2162,37 @@ getgenv().getscriptthread = function(script)
     coroutine.resume(thread)
     return thread
 end
+getgenv().require = function(scr) -- not mine
+	assert(type(scr) == "number" or (typeof(scr) == "Instance" and scr.ClassName == "ModuleScript"), "Expected")
+	if (type(scr) == "number") then 
+		if not game:GetObjects('rbxassetid://' .. scr)[1] then 
+			warn("[ Salad ]: Require failed: invalid asset ID")
+			return 
+		end
+		if typeof(game:GetObjects('rbxassetid://' .. scr)[1]) == "Instance" and game:GetObjects('rbxassetid://' .. scr)[1].ClassName == "ModuleScript" then
+			if game:GetObjects('rbxassetid://' .. scr)[1].Name == "MainModule" then 
+				if game:GetObjects('rbxassetid://' .. scr)[1].Source ~= "" then 
+					return loadstring(game:GetObjects('rbxassetid://' .. scr)[1].Source)()
+				else 
+					warn("[ Salad ]: Require failed: cant require a modulescript with no code")
+				end
+			else 
+				warn("[ Salad ]: Require failed: require asset id failed")
+			end
+		end
+		return
+	elseif typeof(t) == "Instance" and scr.ClassName == "ModuleScript" then
+		if scr.Name == "MainModule" then 
+			if scr.Source ~= "" then 
+				return loadstring(scr.Source)()
+			else 
+				warn("[ Salad ]: Require failed: cant require a modulescript with no code")
+			end
+		else 
+			warn("[ Salad ]: Require failed: require asset id failed")
+		end
+	end
+end
 warn("[ Salad ]: Added functions to the env.")
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
