@@ -2183,6 +2183,17 @@ getgenv().require = function(scr) -- not mine
 		return
 	end
 end
+getgenv().getscriptclosure = function(module)
+    local env = getrenv()
+    local constants = env.require(module)
+    return function()
+        local copy = {}
+        for k, v in pairs(constants) do
+            copy[k] = v
+        end
+        return copy
+    end
+end
 warn("[ Salad ]: Added functions to the env.")
 if not shared.notified then 
     game:GetService("StarterGui"):SetCore("SendNotification", {
