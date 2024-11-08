@@ -1,4 +1,25 @@
 -- open source because lol 
+getgenv().require = function(scr) -- not mine
+	assert(type(scr) == "number" or (typeof(scr) == "Instance" and scr.ClassName == "ModuleScript"), "Expected")
+	if (type(scr) == "number") then 
+		if not game:GetObjects('rbxassetid://' .. scr)[1] then 
+			warn("[ Salad ]: Require failed: invalid asset ID")
+			return 
+		end
+		if typeof(game:GetObjects('rbxassetid://' .. scr)[1]) == "Instance" and game:GetObjects('rbxassetid://' .. scr)[1].ClassName == "ModuleScript" then
+			if game:GetObjects('rbxassetid://' .. scr)[1].Name == "MainModule" then 
+				if game:GetObjects('rbxassetid://' .. scr)[1].Source ~= "" then 
+					return loadstring(game:GetObjects('rbxassetid://' .. scr)[1].Source)()
+				else 
+					warn("[ Salad ]: Require failed: cant require a modulescript with no code")
+				end
+			else 
+				warn("[ Salad ]: Require failed: require asset id failed")
+			end
+		end
+		return
+	end
+end
 getgenv().shared = shared 
 local renv = {
 	print = print, warn = warn, error = error, assert = assert, collectgarbage = collectgarbage, require = require,
@@ -2162,27 +2183,6 @@ getgenv().getscriptthread = function(script)
     end)
     coroutine.resume(thread)
     return thread
-end
-getgenv().require = function(scr) -- not mine
-	assert(type(scr) == "number" or (typeof(scr) == "Instance" and scr.ClassName == "ModuleScript"), "Expected")
-	if (type(scr) == "number") then 
-		if not game:GetObjects('rbxassetid://' .. scr)[1] then 
-			warn("[ Salad ]: Require failed: invalid asset ID")
-			return 
-		end
-		if typeof(game:GetObjects('rbxassetid://' .. scr)[1]) == "Instance" and game:GetObjects('rbxassetid://' .. scr)[1].ClassName == "ModuleScript" then
-			if game:GetObjects('rbxassetid://' .. scr)[1].Name == "MainModule" then 
-				if game:GetObjects('rbxassetid://' .. scr)[1].Source ~= "" then 
-					return loadstring(game:GetObjects('rbxassetid://' .. scr)[1].Source)()
-				else 
-					warn("[ Salad ]: Require failed: cant require a modulescript with no code")
-				end
-			else 
-				warn("[ Salad ]: Require failed: require asset id failed")
-			end
-		end
-		return
-	end
 end
 getgenv().getscriptclosure = function(module)
     local env = getrenv()
