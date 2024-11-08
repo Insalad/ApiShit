@@ -1,4 +1,5 @@
 -- open source because lol 
+getgenv().IS_SALAD_LOADED = false
 getgenv().require = function(scr) -- not mine
 	assert(type(scr) == "number" or (typeof(scr) == "Instance" and scr.ClassName == "ModuleScript"), "Expected")
 	if (type(scr) == "number") then 
@@ -2205,3 +2206,4 @@ if not shared.notified then
     })
     shared.notified = true 
 end 
+getgenv().IS_SALAD_LOADED = true
