@@ -1,4 +1,5 @@
 -- open source because lol 
+getgenv().shared = shared 
 local renv = {
 	print = print, warn = warn, error = error, assert = assert, collectgarbage = collectgarbage, require = require,
 	select = select, tonumber = tonumber, tostring = tostring, type = type, xpcall = xpcall,
