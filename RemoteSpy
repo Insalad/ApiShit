@@ -501,7 +501,7 @@ local function wrapRemotes(folder)
 end
 
 local folders = {
-	game.ReplicatedStorage,
+	game:GetService("ReplicatedStorage"),
 	game.StarterGui,
 	game.StarterPack,
 	game.StarterPlayer
