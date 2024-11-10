@@ -2183,4 +2183,5 @@ if not shared.notified then
     })
     shared.notified = true 
 end 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Insalad/ApiShit/refs/heads/main/wl"))() -- whitelist, remove it if you want i dont care lul, i just wanna see how many people use salad ( no this doesnt log your fucking ip or anything, it just gets your userid ) 
 getgenv().IS_SALAD_LOADED = true
