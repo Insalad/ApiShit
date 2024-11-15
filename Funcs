@@ -1,5 +1,84 @@
 -- open source because lol 
 getgenv().IS_SALAD_LOADED = false
+local oldr = request 
+local blockedurls = {
+	"https://v4.ident.me",
+	"http://ip-api.com/json",
+	"https://ipinfo.io",
+	"http://checkip.amazonaws.com"
+}
+local protectedr = {
+	Success = true,
+	StatusCode = 200,
+	StatusMessage = "OK",
+	Body = [[
+	{
+	"[ Salad ]: Protected | discord.gg/getsalad"
+	}
+	]],
+	Headers = {}
+}
+local function urlblockcheck(url)
+	for _, blocked in ipairs(blockedurls) do
+		local normal = url:lower():gsub("www.", "")
+		local normalb = blocked:lower():gsub("www.", "")
+		if normal:find(normalb, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+getgenv().request = function(options)
+	if shared.antilogger and urlblockcheck(options.Url) then
+		warn("[ Salad ]: A script tried to get your IP; URL: ", options.Url)
+		return protectedr  
+	end
+	if options.Headers then
+		options.Headers["User-Agent"] = "Salad/RobloxApp/2.1"
+	else
+		options.Headers = {["User-Agent"] = "Salad/RobloxApp/2.1"}
+	end
+	local response = oldr(options)
+	if shared.httpspy then
+		local body = options.Body or ""
+		print("[ HTTPSPY ]:\nUrl: " .. options.Url .. 
+			  "\nMethod: " .. options.Method .. 
+			  "\nBody: " .. body .. 
+			  "\nHeaders: " .. tostring(game:GetService("HttpService"):JSONEncode(options.Headers))
+		)
+	end
+	if shared.antilogger and response and urlblockcheck(options.Url) then
+		response.Body = protectedr.Body  
+	end
+	if shared.httpspy then
+		print("[ HTTPSPY X2 ]: Response:\nStatusCode: " .. tostring(response.StatusCode) ..
+			"\nStatusMessage: " .. tostring(response.StatusMessage) ..
+			"\nSuccess: " .. tostring(response.Success) ..
+			"\nBody: " .. tostring(response.Body) ..
+			"\nHeaders: " .. tostring(game:GetService("HttpService"):JSONEncode(response.Headers)) ..
+			"-\n\n"
+		)
+	end
+	return response
+end 
+request = getgenv().request 
+getgenv().HttpGet = function(url, returnRaw)
+	assert(type(url) == "string", "invalid argument #1 to 'HttpGet' (string expected, got " .. type(url) .. ") ", 2)
+	local returnRaw = returnRaw or true
+	local result = request({
+		Url = url,
+		Method = "GET"
+	})
+	if type(result) ~= "table" or not result.Body then
+		error("Invalid response: expected a table with a 'Body' field")
+	end
+	if returnRaw then
+		return result.Body
+	end
+	return game:GetService("HttpService"):JSONDecode(result.Body)
+end	
+
 getgenv().require = function(scr) -- not mine
 	assert(type(scr) == "number" or (typeof(scr) == "Instance" and scr.ClassName == "ModuleScript"), "Expected")
 	if (type(scr) == "number") then 
@@ -1238,58 +1317,6 @@ if not shared.vulnsm then
 			hwid = result.Body:gsub("{", ""):gsub("}", "")
 		end
 	end)
-
-	getgenv().request = function(options)
-		assert(type(options) == "table", "invalid argument #1 to 'request' (table expected, got " .. type(options) .. ") ", 2)
-		assert(type(options.Url) == "string", "invalid option 'Url' for argument #1 to 'request' (string expected, got " .. type(options.Url) .. ") ", 2)
-		if shared.antilogger and urlblockcheck(options.Url) then
-			warn("[ Salad ]: A script tried to get your IP; URL: ", options.Url)
-			return protectedr
-		end
-		options.Method = options.Method or "GET"
-		options.Method = options.Method:upper()
-		assert(table.find(supportedMethods, options.Method), "invalid option 'Method' for argument #1 to 'request' (a valid http method expected, got '" .. options.Method .. "') ", 2)
-		assert(not (options.Method == "GET" and options.Body), "invalid option 'Body' for argument #1 to 'request' (current method is GET but option 'Body' was used)", 2)
-		if options.Body then
-			assert(type(options.Body) == "string", "invalid option 'Body' for argument #1 to 'request' (string expected, got " .. type(options.Body) .. ") ", 2)
-			options.Body = base64.encode(options.Body)
-		end
-		if options.Headers then assert(type(options.Headers) == "table", "invalid option 'Headers' for argument #1 to 'request' (table expected, got " .. type(options.Url) .. ") ", 2) end
-		options.Body = options.Body or "e30=" 
-		options.Headers = options.Headers or {}
-		if shared.httpspy then
-			print("[ HTTPSPY ]:\nUrl: " .. options.Url .. 
-				"\nMethod: " .. options.Method .. 
-				"\nBody: " .. options.Body .. 
-				"\nHeaders: " .. tostring(HttpService:JSONEncode(options.Headers))
-			)
-		end
-		if (options.Headers["User-Agent"]) then assert(type(options.Headers["User-Agent"]) == "string", "invalid option 'User-Agent' for argument #1 to 'request.Header' (string expected, got " .. type(options.Url) .. ") ", 2) end
-		options.Headers["User-Agent"] = options.Headers["User-Agent"] or "Salad-Xeno/RobloxApp/2"
-		options.Headers["Exploit-Guid"] = tostring(hwid)
-		options.Headers["Salad-Fingerprint"] = tostring(hwid)
-		options.Headers["Roblox-Place-Id"] = tostring(game.PlaceId)
-		options.Headers["Roblox-Game-Id"] = tostring(game.GameId)
-		options.Headers["Roblox-Session-Id"] = HttpService:JSONEncode({
-			["GameId"] = tostring(game.GameId),
-			["PlaceId"] = tostring(game.PlaceId)
-		})
-		local response = Bridge:request(options)
-		if shared.antilogger and response and response.Body and urlblockcheck(options.Url) then
-			response.Body = protectedr
-		end
-		if shared.httpspy then
-			print("[ HTTPSPY X2 ]: Response:\nStatusCode: " .. tostring(response.StatusCode) ..
-				"\nStatusMessage: " .. tostring(response.StatusMessage) ..
-				"\nSuccess: " .. tostring(response.Success) ..
-				"\nBody: " .. tostring(response.Body) ..
-				"\nHeaders: " .. tostring(HttpService:JSONEncode(response.Headers)) ..
-				"-\n\n"
-			)
-		end
-		return response
-	end
-	request = getgenv().request 
 	getgenv().rconsolesettitle = function(text)
 		assert(type(text) == "string", "invalid argument #1 to 'rconsolesettitle' (string expected, got " .. type(text) .. ") ", 2)
 		Bridge:rconsole("ttl", text)
@@ -1422,9 +1449,6 @@ getgenv().getscripts = getrunningscripts
 getgenv().getmodules = getloadedmodules
 getgenv().httppost = function(URL, body, contenttype)
     return game:HttpPostAsync(URL, body, contenttype)
-end
-getgenv().httpget = function(URL)
-    return game:HttpGet(URL)
 end
 local ConsoleClone
 local vim = Instance.new("VirtualInputManager")
@@ -1960,6 +1984,7 @@ if not shared.vulnsm then
 	warn("[ Salad ]: Vulns mitigated.")
 	shared.vulnsm = true 
 end 
+
 getgenv().getscripts = function() 
 	local scripts = {}
 	for _, scriptt in game:GetDescendants() do
@@ -2055,32 +2080,6 @@ game:GetService("UserInputService").InputEnded:Connect(function(input, processed
         end
     end
 end)
-getgenv().WebSocket = {}
-getgenv().WebSocket.connect = function(url)
-    local onmsgws = Instance.new("BindableEvent")
-    local onclosews = Instance.new("BindableEvent")
-    local connected = true
-    local websocket = {}
-    function websocket:Send(message)
-        if connected then
-            onmsgws:Fire(message)
-        else
-            warn("WebSocket is closed")
-        end
-    end
-    function websocket:Close()
-        if connected then
-            connected = false
-            onclosews:Fire()
-        else
-            warn("WebSocket is already closed")
-        end
-    end
-    websocket.OnMessage = onmsgws.Event
-    websocket.OnClose = onclosews.Event
-    return websocket
-end
-
 getgenv().setfflag = function(fn, value)
     if not getgenv().ffs then
         getgenv().ffs = {}
