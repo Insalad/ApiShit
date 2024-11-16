@@ -102,7 +102,7 @@ getgenv().require = function(scr) -- not mine
 end
 getgenv().shared = shared 
 local renv = {
-	print = print, warn = warn, error = error, assert = assert, collectgarbage = collectgarbage, require = require,
+	print = print, warn = warn, error = error, shared = shared, assert = assert, collectgarbage = collectgarbage, require = require,
 	select = select, tonumber = tonumber, tostring = tostring, type = type, xpcall = xpcall,
 	pairs = pairs, next = next, ipairs = ipairs, newproxy = newproxy, rawequal = rawequal, rawget = rawget,
 	rawset = rawset, rawlen = rawlen, gcinfo = gcinfo,
