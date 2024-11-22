@@ -1383,12 +1383,6 @@ if not shared.vulnsm then
 	getgenv().consolecreate = getgenv().rconsolecreate
 	getgenv().consolewarn = getgenv().rconsolewarn
 end 
-getgenv().getexecutorname = function()
-	return "Salad"
-end 
-getgenv().identifyexecutor = function()
-	return "Salad", "2"
-end 
 getgenv().getcallingscript = function()
 	local Source = debug.info(1, 's')
 	for i, v in next, game:GetDescendants() do if v:GetFullName() == Source then return v end end
@@ -1396,15 +1390,17 @@ end
 local cclosures = {}
 getgenv().newcclosure = function(a)
     assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
-    
-    local cclosure = coroutine.wrap(function(...)
-        coroutine.yield(a(...))
-    end)
-    
+    local cclosure = function(...)
+        local co = coroutine.create(a)
+        local ok, result = coroutine.resume(co, ...)
+        if not ok then
+            error(result, 2)
+        end
+        return result
+    end
     table.insert(cclosures, cclosure)
     return cclosure
 end
-
 getgenv().iscclosure = function(a)
     assert(typeof(a) == "function", "argument #1 is not a 'function'", 0)
 	if a == newcclosure then return true end 
