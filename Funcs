@@ -1812,7 +1812,6 @@ if not shared.vulnsm then
 		"HttpRbxApiService",
 		"MarketplaceService",
 		"HttpService",
-		"GuiService",
 		"OpenCloudService",
 		"BrowserService",
 		"LinkingService",
