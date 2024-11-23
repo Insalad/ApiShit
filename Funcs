@@ -1293,17 +1293,6 @@ local protectedr = {
     Headers = {}
 }
 
-local function urlblockcheck(url)
-    for _, blocked in ipairs(blockedurls) do
-        local normal = url:lower():gsub("www.", "")
-        local normalb = blocked:lower():gsub("www.", "")
-        if normal:find(normalb, 1, true) then
-            return true
-        end
-    end
-    return false
-end
-
 if not shared.vulnsm then 
 	task.spawn(function()
 		local result = sendRequest({
@@ -1798,14 +1787,6 @@ getgenv().salad.disable_antilogger = function()
 	end
 	coroutine.wrap(drag)()	
 end 
-local oldsf = setfenv 
-getgenv().setfenv = function(f, env)
-    if f == newcclosure then
-        return error("'setfenv' cannot change environment of given object")
-    else
-        return oldsf(f, env) 
-    end
-end
 if not shared.vulnsm then 
 	local wrappercache = setmetatable({}, {__mode = "k"})
 	local vulnInstanceTbl = {
