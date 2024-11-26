@@ -163,6 +163,13 @@ local renv = {
 }
 table.freeze(renv)
 
+getgenv().gethui = function()
+    local f = Instance.new("Folder")
+    f.Name = "Salad HUI"
+    f.Parent = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
+    return f 
+end
+
 getgenv().getrenv = function()
     return renv 
 end 
