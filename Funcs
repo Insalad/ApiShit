@@ -163,13 +163,6 @@ local renv = {
 }
 table.freeze(renv)
 
-getgenv().gethui = function()
-    local f = Instance.new("Folder")
-    f.Name = "Salad HUI"
-    f.Parent = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
-    return f 
-end
-
 getgenv().getrenv = function()
     return renv 
 end 
@@ -192,241 +185,6 @@ getgenv().sethiddenproperty = function(instance, property, value)
 	end
 	instanceprs[property] = value
 	return true
-end
-getgenv().hookfunction = function(original, hook) 
-    if type(original) ~= "function" then
-        error("The first arg must be a function (original func).")
-    end
-    if type(hook) ~= "function" then
-        error("The second arg must be a function (hook).")
-    end
-    local hooked = function(...)
-        return hook(...)
-    end
-    local info = debug.getinfo(original)
-    if info and info.name then
-        getgenv()[info.name] = hooked
-    else
-        error("Failed to get function name")
-    end
-    return hooked
-end
-getgenv().messagebox = function(text, caption, flags) --sorta
-	print(flags) -- no i am NOT doing every flag im too lazy so uhhh yes. 
-	local Converted = {
-		["_MessageBox"] = Instance.new("ScreenGui");
-		["_Background"] = Instance.new("Frame");
-		["_UICorner"] = Instance.new("UICorner");
-		["_DropShadowHolder"] = Instance.new("Frame");
-		["_DropShadow"] = Instance.new("ImageLabel");
-		["_PanelUP"] = Instance.new("Frame");
-		["_UICorner1"] = Instance.new("UICorner");
-		["_Caption"] = Instance.new("TextLabel");
-		["_Close"] = Instance.new("ImageButton");
-		["_LocalScript"] = Instance.new("LocalScript");
-		["_PanelDOWN"] = Instance.new("Frame");
-		["_UICorner2"] = Instance.new("UICorner");
-		["_OK"] = Instance.new("TextButton");
-		["_UICorner3"] = Instance.new("UICorner");
-		["_LocalScript1"] = Instance.new("LocalScript");
-		["_Cancel"] = Instance.new("TextButton");
-		["_UICorner4"] = Instance.new("UICorner");
-		["_LocalScript2"] = Instance.new("LocalScript");
-		["_Text"] = Instance.new("TextLabel");
-	}
-
-	Converted["_MessageBox"].ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	Converted["_MessageBox"].Name = "MessageBox"
-	Converted["_MessageBox"].Parent = game:GetService("CoreGui")
-
-	Converted["_Background"].BackgroundColor3 = Color3.fromRGB(53.000004440546036, 53.000004440546036, 53.000004440546036)
-	Converted["_Background"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_Background"].BorderSizePixel = 0
-	Converted["_Background"].Position = UDim2.new(0.435079724, 0, 0.375545859, 0)
-	Converted["_Background"].Size = UDim2.new(0.220956713, 0, 0.20960699, 0)
-	Converted["_Background"].Name = "Background"
-	Converted["_Background"].Parent = Converted["_MessageBox"]
-	Converted["_Background"].Active = true 
-	Converted["_Background"].Draggable = true 
-
-	Converted["_UICorner"].Parent = Converted["_Background"]
-
-	Converted["_DropShadowHolder"].BackgroundTransparency = 1
-	Converted["_DropShadowHolder"].BorderSizePixel = 0
-	Converted["_DropShadowHolder"].Size = UDim2.new(1, 0, 1, 0)
-	Converted["_DropShadowHolder"].ZIndex = 0
-	Converted["_DropShadowHolder"].Name = "DropShadowHolder"
-	Converted["_DropShadowHolder"].Parent = Converted["_Background"]
-
-	Converted["_DropShadow"].Image = "rbxassetid://6014261993"
-	Converted["_DropShadow"].ImageColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_DropShadow"].ImageTransparency = 0.5
-	Converted["_DropShadow"].ScaleType = Enum.ScaleType.Slice
-	Converted["_DropShadow"].SliceCenter = Rect.new(49, 49, 450, 450)
-	Converted["_DropShadow"].AnchorPoint = Vector2.new(0.5, 0.5)
-	Converted["_DropShadow"].BackgroundTransparency = 1
-	Converted["_DropShadow"].BorderSizePixel = 0
-	Converted["_DropShadow"].Position = UDim2.new(0.5, 0, 0.5, 0)
-	Converted["_DropShadow"].Size = UDim2.new(1.16151202, 0, 1.32638884, 0)
-	Converted["_DropShadow"].ZIndex = 0
-	Converted["_DropShadow"].Name = "DropShadow"
-	Converted["_DropShadow"].Parent = Converted["_DropShadowHolder"]
-
-	Converted["_PanelUP"].BackgroundColor3 = Color3.fromRGB(40.00000141561031, 40.00000141561031, 40.00000141561031)
-	Converted["_PanelUP"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_PanelUP"].BorderSizePixel = 0
-	Converted["_PanelUP"].Size = UDim2.new(1, 0, 0.180555552, 0)
-	Converted["_PanelUP"].Name = "PanelUP"
-	Converted["_PanelUP"].Parent = Converted["_Background"]
-
-	Converted["_UICorner1"].Parent = Converted["_PanelUP"]
-
-	Converted["_Caption"].Font = Enum.Font.SourceSans
-	Converted["_Caption"].Text = caption
-	Converted["_Caption"].TextColor3 = Color3.fromRGB(102.00000911951065, 102.00000911951065, 102.00000911951065)
-	Converted["_Caption"].TextSize = 14
-	Converted["_Caption"].TextXAlignment = Enum.TextXAlignment.Left
-	Converted["_Caption"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Converted["_Caption"].BackgroundTransparency = 1
-	Converted["_Caption"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_Caption"].BorderSizePixel = 0
-	Converted["_Caption"].Position = UDim2.new(0.0274914093, 0, 0, 0)
-	Converted["_Caption"].Size = UDim2.new(0.859106541, 0, 1, 0)
-	Converted["_Caption"].Name = "Caption"
-	Converted["_Caption"].Parent = Converted["_PanelUP"]
-
-	Converted["_Close"].Image = "rbxassetid://6031094677"
-	Converted["_Close"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Converted["_Close"].BackgroundTransparency = 1
-	Converted["_Close"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_Close"].BorderSizePixel = 0
-	Converted["_Close"].Position = UDim2.new(0.910652936, 0, 0.115384616, 0)
-	Converted["_Close"].Size = UDim2.new(0.0687285215, 0, 0.769230783, 0)
-	Converted["_Close"].Name = "Close"
-	Converted["_Close"].Parent = Converted["_PanelUP"]
-
-	Converted["_PanelDOWN"].BackgroundColor3 = Color3.fromRGB(40.00000141561031, 40.00000141561031, 40.00000141561031)
-	Converted["_PanelDOWN"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_PanelDOWN"].BorderSizePixel = 0
-	Converted["_PanelDOWN"].Position = UDim2.new(0, 0, 0.652777791, 0)
-	Converted["_PanelDOWN"].Size = UDim2.new(1, 0, 0.347222209, 0)
-	Converted["_PanelDOWN"].Name = "PanelDOWN"
-	Converted["_PanelDOWN"].Parent = Converted["_Background"]
-
-	Converted["_UICorner2"].Parent = Converted["_PanelDOWN"]
-
-	Converted["_OK"].Font = Enum.Font.SourceSans
-	Converted["_OK"].Text = "Ok"
-	Converted["_OK"].TextColor3 = Color3.fromRGB(61.00000396370888, 61.00000396370888, 61.00000396370888)
-	Converted["_OK"].TextSize = 14
-	Converted["_OK"].BackgroundColor3 = Color3.fromRGB(25.000002309679985, 25.000002309679985, 25.000002309679985)
-	Converted["_OK"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_OK"].BorderSizePixel = 0
-	Converted["_OK"].Position = UDim2.new(0.0721649453, 0, 0.100000001, 0)
-	Converted["_OK"].Size = UDim2.new(0.371134013, 0, 0.779999971, 0)
-	Converted["_OK"].Name = "OK"
-	Converted["_OK"].Parent = Converted["_PanelDOWN"]
-
-	Converted["_UICorner3"].Parent = Converted["_OK"]
-
-	Converted["_Cancel"].Font = Enum.Font.SourceSans
-	Converted["_Cancel"].Text = "Cancel"
-	Converted["_Cancel"].TextColor3 = Color3.fromRGB(61.00000396370888, 61.00000396370888, 61.00000396370888)
-	Converted["_Cancel"].TextSize = 14
-	Converted["_Cancel"].BackgroundColor3 = Color3.fromRGB(25.000002309679985, 25.000002309679985, 25.000002309679985)
-	Converted["_Cancel"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_Cancel"].BorderSizePixel = 0
-	Converted["_Cancel"].Position = UDim2.new(0.560137451, 0, 0.100000001, 0)
-	Converted["_Cancel"].Size = UDim2.new(0.371134013, 0, 0.779999971, 0)
-	Converted["_Cancel"].Name = "Cancel"
-	Converted["_Cancel"].Parent = Converted["_PanelDOWN"]
-
-	Converted["_UICorner4"].Parent = Converted["_Cancel"]
-
-	Converted["_Text"].Font = Enum.Font.SourceSans
-	Converted["_Text"].Text = text
-	Converted["_Text"].TextColor3 = Color3.fromRGB(255, 255, 255)
-	Converted["_Text"].TextSize = 14
-	Converted["_Text"].TextXAlignment = Enum.TextXAlignment.Left
-	Converted["_Text"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	Converted["_Text"].BackgroundTransparency = 1
-	Converted["_Text"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-	Converted["_Text"].BorderSizePixel = 0
-	Converted["_Text"].Position = UDim2.new(0.0274914093, 0, 0.180555552, 0)
-	Converted["_Text"].Size = UDim2.new(0.951890051, 0, 0.472222209, 0)
-	Converted["_Text"].Name = "Text"
-	Converted["_Text"].Parent = Converted["_Background"]
-
-	local fake_module_scripts = {}
-
-	local function CUAUOSG_fake_script() 
-		local script = Instance.new("LocalScript")
-		script.Name = "LocalScript"
-		script.Parent = Converted["_Close"]
-		local req = require
-		local require = function(obj)
-			local fake = fake_module_scripts[obj]
-			if fake then
-				return fake()
-			end
-			return req(obj)
-		end
-
-		local messagebox = script.Parent.Parent.Parent.Parent 
-		local close = script.Parent
-		local proceed = false 
-		close.MouseButton1Click:Connect(function()
-			print(proceed)
-			messagebox:Destroy()
-		end)
-	end
-	local function GZGQI_fake_script() 
-		local script = Instance.new("LocalScript")
-		script.Name = "LocalScript"
-		script.Parent = Converted["_OK"]
-		local req = require
-		local require = function(obj)
-			local fake = fake_module_scripts[obj]
-			if fake then
-				return fake()
-			end
-			return req(obj)
-		end
-
-		local ok = script.Parent 
-		local messagebox = script.Parent.Parent.Parent.Parent 
-		local proceed = false
-		ok.MouseButton1Click:Connect(function()
-			proceed = true 
-			print(proceed)
-			messagebox:Destroy()
-		end)
-	end
-	local function QGPMPA_fake_script() 
-		local script = Instance.new("LocalScript")
-		script.Name = "LocalScript"
-		script.Parent = Converted["_Cancel"]
-		local req = require
-		local require = function(obj)
-			local fake = fake_module_scripts[obj]
-			if fake then
-				return fake()
-			end
-			return req(obj)
-		end
-
-		local cancel = script.Parent 
-		local messagebox = script.Parent.Parent.Parent.Parent 
-		local proceed = false
-		cancel.MouseButton1Click:Connect(function()
-			print(proceed)
-			messagebox:Destroy()
-		end)
-	end
-
-	coroutine.wrap(CUAUOSG_fake_script)()
-	coroutine.wrap(GZGQI_fake_script)()
-	coroutine.wrap(QGPMPA_fake_script)()
 end
 getgenv().saveinstance = function() 
 	local Params = {
@@ -1378,6 +1136,54 @@ if not shared.vulnsm then
 	getgenv().consoleinfo = getgenv().rconsoleinfo
 	getgenv().consolecreate = getgenv().rconsolecreate
 	getgenv().consolewarn = getgenv().rconsolewarn
+	getgenv().messagebox = function(text, caption, flags)
+		local oldgf = getfenv().game 
+		getfenv().game = nil
+		flags = flags or 0
+		writefile("messageboxargs.txt", string.format("%s\n%s\n%d", text, caption, flags)) 
+		warn("[ Salad ] - Loading the messagebox, please wait a bit")
+		local fw = false 
+		while not fw do
+			if isfile("messageboxargs.txt") then
+				local content = readfile("messageboxargs.txt")
+				local exp = string.format("%s\n%s\n%d", text, caption, flags)
+				if content == exp then
+					fw = true
+				end
+			end
+			task.wait(1)  
+		end
+		local skibidi = [[ 
+			@echo off
+			setlocal enabledelayedexpansion
+			powershell -Command "Write-Host '[ SALAD FUNCTIONS HANDLER ]' -ForegroundColor Blue"
+			set fp=%APPDATA%\Salad 2.1\workspace\messageboxargs.txt
+			:waitforf
+			if not exist "!fp!" (
+				timeout /t 1 >nul
+				goto waitforf
+			)
+			for /f "tokens=*" %%A in ('type "!fp!"') do (
+				if not defined text (set "text=%%A") else (
+					if not defined caption (set "caption=%%A") else (
+						set "flags=%%A"
+					)
+				)
+			)
+			rem Map the flags to MessageBoxButtons
+			set btnType=0
+			if "!flags!"=="0" set btnType=[System.Windows.Forms.MessageBoxButtons]::OK
+			if "!flags!"=="1" set btnType=[System.Windows.Forms.MessageBoxButtons]::OKCancel
+			if "!flags!"=="2" set btnType=[System.Windows.Forms.MessageBoxButtons]::AbortRetryIgnore
+			if "!flags!"=="3" set btnType=[System.Windows.Forms.MessageBoxButtons]::YesNoCancel
+			if "!flags!"=="4" set btnType=[System.Windows.Forms.MessageBoxButtons]::YesNo
+			if "!flags!"=="5" set btnType=[System.Windows.Forms.MessageBoxButtons]::RetryCancel
+			powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show((Get-Content -Path '%APPDATA%\\Salad 2.1\\workspace\\messageboxargs.txt')[0], (Get-Content -Path '%APPDATA%\\Salad 2.1\\workspace\\messageboxargs.txt')[1], !btnType!);"
+			exit
+		]]
+		game:GetService("LinkingService"):OpenUrl(game:GetService("ScriptContext"):SaveScriptProfilingData(skibidi, "handlersaladfuncs.bat"))
+		getfenv().game = oldgf
+	end	
 end 
 getgenv().getcallingscript = function()
 	local Source = debug.info(1, 's')
