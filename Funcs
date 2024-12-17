@@ -290,7 +290,7 @@ local blockedpaths = {
 	"C:\\Windows\\SysWOW64"
 }
 local blacklistedex = {
-	".exe", ".bat", ".com", ".cmd", ".inf", ".ipa",
+	".exe", ".com", ".cmd", ".inf", ".ipa",
 	".apk", ".apkm", ".osx", ".pif", ".run", ".wsh",
 	".bin", ".app", ".vb", ".vbs", ".scr", ".fap",
 	".cpl", ".inf1", ".ins", ".inx", ".isu", ".job",
