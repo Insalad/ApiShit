@@ -1805,6 +1805,12 @@ getgenv().clonefunction = newcclosure(function(func)
     setfenv(newfunc, getfenv(func))
     return newfunc
 end)
+getgenv().identifyexecutor = function()
+    return "Salad", 2.4 
+end 
+getgenv().getexecutorname = function()
+    return "Salad"
+end 
 -- aliases
 getgenv().get_calling_script = getcallingscript 
 getgenv().isreadable = isreadonly 
