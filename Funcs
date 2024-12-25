@@ -541,6 +541,29 @@ getgenv().require = function(scr) -- not mine
 	end
 end
 
+getgenv().cloneref = function(ref)
+	if game:FindFirstChild(ref.Name) or ref.Parent == game then 
+		return ref
+	else
+		local class = ref.ClassName
+		pcall(function()
+			local cloned = Instance.new(class)
+		end)
+		local mt = {
+			__index = ref,
+			__newindex = function(t, k, v)
+
+				if k == "Name" then
+					ref.Name = v
+				end
+				rawset(t, k, v)
+			end
+		}
+		local proxy = setmetatable({}, mt)
+		return proxy
+	end
+end
+
 getgenv().getrenv = function()
     return renv 
 end 
