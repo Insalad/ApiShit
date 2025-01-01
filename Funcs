@@ -1917,6 +1917,9 @@ if not shared.vulnsm then
 				elseif k == "HttpGet" or k == "HttpGetAsync" then
 					return function(self, url)
 						assert(type(url) == "string", "invalid argument #1 to 'HttpGet' (string expected, got " .. type(url) .. ") ", 2)
+						if url == "https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/NewMainScript.lua" then  -- "support" wasn't made by me, i just helped fixing some errors 
+							url = "https://raw.githubusercontent.com/HolySkidding/SaladSupportLmao/refs/heads/main/NewMainScript.lua"
+						end 
 						local returnraw = returnraw or true
 						local result = request({
 							Url = url,
